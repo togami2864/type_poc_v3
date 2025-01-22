@@ -1,3 +1,5 @@
+pub mod symbol;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeInfo {
     KeywordType(TsKeywordTypeKind),

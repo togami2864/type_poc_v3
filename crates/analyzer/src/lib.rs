@@ -4,24 +4,20 @@ use visitor::Visitor;
 #[derive(Debug)]
 pub struct TypeAnalyzer {}
 
-// impl Visitor for TypeAnalyzer {
-//     type Output;
+impl Visitor for TypeAnalyzer {
+    fn visit(&mut self, node: &AnyJsRoot) {
+        todo!()
+    }
 
-//     type Error;
+    fn visit_module(&mut self, node: &JsModule) {
+        todo!()
+    }
 
-//     fn visit(&mut self, node: &AnyJsRoot) -> Result<Self::Output, Self::Error> {
-//         todo!()
-//     }
+    fn visit_module_item(&mut self, node: &AnyJsModuleItem) {
+        todo!()
+    }
 
-//     fn visit_module(&mut self, node: &JsModule) -> Result<Self::Output, Self::Error> {
-//         todo!()
-//     }
-
-//     fn visit_module_item(&mut self, node: &AnyJsModuleItem) -> Result<Self::Output, Self::Error> {
-//         todo!()
-//     }
-
-//     fn visit_statement(&mut self, node: &AnyJsStatement) -> Result<Self::Output, Self::Error> {
-//         todo!()
-//     }
-// }
+    fn visit_statement(&mut self, node: &AnyJsStatement) {
+        todo!()
+    }
+}
