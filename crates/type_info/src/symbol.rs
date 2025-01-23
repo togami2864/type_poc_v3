@@ -8,8 +8,13 @@ use rustc_hash::FxHashMap;
 #[derive(Debug)]
 pub struct Symbol {
     pub name: String,
-    pub node: SyntaxNode<JsLanguage>,
     pub ty: TypeInfo,
+}
+
+impl Symbol {
+    pub fn new(name: String, ty: TypeInfo) -> Self {
+        Self { name, ty }
+    }
 }
 
 #[derive(Debug, Default)]

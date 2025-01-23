@@ -23,6 +23,7 @@ version = "0.1.0"
 dependencies = [
  "biome_js_syntax",
  "biome_rowan",
+ "type_info",
  "visitor",
 ]
 

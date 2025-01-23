@@ -10,6 +10,8 @@ pub enum TypeInfo {
     Interface(TsInterface),
     Literal(TsLiteralTypeKind),
     TypeRef(TsTypeRef),
+
+    Unknown,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,7 +36,7 @@ pub enum TsKeywordTypeKind {
 pub enum TsLiteralTypeKind {
     Number(i64),
     String(String),
-    Boolean(bool),
+    Boolean(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
