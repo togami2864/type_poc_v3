@@ -10,7 +10,6 @@ pub enum TypeInfo {
     Interface(TsInterface),
     Literal(TsLiteralTypeKind),
     TypeRef(TsTypeRef),
-
     Unknown,
 }
 
@@ -37,12 +36,24 @@ pub enum TsLiteralTypeKind {
     Number(i64),
     String(String),
     Boolean(BoolLiteral),
+    Object(ObjectLiteral),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BoolLiteral {
     True,
     False,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObjectLiteral {
+    pub properties: Vec<ObjectPropertyType>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObjectPropertyType {
+    pub name: String,
+    pub type_info: TypeInfo,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,11 +75,11 @@ pub struct FunctionParam {
 pub struct TsInterface {
     pub name: String,
     pub extends: Vec<TypeInfo>,
-    pub properties: Vec<InterfaceProperty>,
+    pub properties: Vec<TsInterfaceProperty>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct InterfaceProperty {
+pub struct TsInterfaceProperty {
     pub name: String,
     pub type_info: TypeInfo,
     pub is_optional: bool,

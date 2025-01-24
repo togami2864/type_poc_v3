@@ -116,6 +116,46 @@ declare const j: any;
     }
 
     #[test]
+    fn test_object_literal() {
+        let src = r#"
+        const obj = {
+            num: 42,
+            str: 'hello',
+            bool: true,
+        };
+    "#;
+
+        let analyzer = test_analyzer(src, JsFileSource::ts());
+
+        assert_eq!(
+            analyzer.get_symbol("obj").unwrap(),
+            &Symbol::new(
+                "obj".to_string(),
+                TypeInfo::Literal(TsLiteralTypeKind::Object(ObjectLiteral {
+                    properties: vec![
+                        ObjectPropertyType {
+                            name: "num".to_string(),
+                            type_info: TypeInfo::Literal(TsLiteralTypeKind::Number(42))
+                        },
+                        ObjectPropertyType {
+                            name: "str".to_string(),
+                            type_info: TypeInfo::Literal(TsLiteralTypeKind::String(
+                                "hello".to_string()
+                            ))
+                        },
+                        ObjectPropertyType {
+                            name: "bool".to_string(),
+                            type_info: TypeInfo::Literal(TsLiteralTypeKind::Boolean(
+                                BoolLiteral::True
+                            ))
+                        }
+                    ]
+                }))
+            )
+        )
+    }
+
+    #[test]
     fn test_literal_types() {
         let src = r#"declare const a: 1;
 declare const b: 'hello';

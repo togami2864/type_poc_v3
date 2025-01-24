@@ -4,7 +4,8 @@ use biome_js_syntax::*;
 use biome_rowan::SyntaxError;
 use type_info::{
     symbol::{Symbol, SymbolTable},
-    BoolLiteral, TsKeywordTypeKind, TsLiteralTypeKind, TypeInfo,
+    BoolLiteral, ObjectLiteral, ObjectPropertyType, TsInterfaceProperty, TsKeywordTypeKind,
+    TsLiteralTypeKind, TypeInfo,
 };
 use visitor::Visitor;
 
@@ -42,7 +43,7 @@ impl TypeAnalyzer {
     }
 
     pub fn analyze_expression(&self, node: &AnyJsExpression) -> TypeInfo {
-        let ty = self.analyze_any_ts_expression(node);
+        let ty = self.analyze_any_js_expression(node);
         match ty {
             Ok(ty) => ty,
             Err(_) => TypeInfo::Unknown,
@@ -109,7 +110,7 @@ impl TypeAnalyzer {
         Ok(ty)
     }
 
-    pub fn analyze_any_ts_expression(&self, node: &AnyJsExpression) -> TResult<TypeInfo> {
+    pub fn analyze_any_js_expression(&self, node: &AnyJsExpression) -> TResult<TypeInfo> {
         let ty = match node {
             AnyJsExpression::AnyJsLiteralExpression(expr) => {
                 self.analyze_js_literal_expression(expr)?
@@ -134,7 +135,7 @@ impl TypeAnalyzer {
             AnyJsExpression::JsMetavariable(js_metavariable) => todo!(),
             AnyJsExpression::JsNewExpression(js_new_expression) => todo!(),
             AnyJsExpression::JsNewTargetExpression(js_new_target_expression) => todo!(),
-            AnyJsExpression::JsObjectExpression(js_object_expression) => todo!(),
+            AnyJsExpression::JsObjectExpression(node) => self.analyze_js_object_expression(node)?,
             AnyJsExpression::JsParenthesizedExpression(js_parenthesized_expression) => todo!(),
             AnyJsExpression::JsPostUpdateExpression(js_post_update_expression) => todo!(),
             AnyJsExpression::JsPreUpdateExpression(js_pre_update_expression) => todo!(),
@@ -193,6 +194,30 @@ impl TypeAnalyzer {
             }
         };
         Ok(ty)
+    }
+
+    pub fn analyze_js_object_expression(&self, node: &JsObjectExpression) -> TResult<TypeInfo> {
+        let mut properties = vec![];
+        for prop in node.members() {
+            let prop = prop?;
+            match prop {
+                AnyJsObjectMember::JsPropertyObjectMember(member) => {
+                    let key = member.name()?.name().unwrap().to_string();
+                    let value = member.value()?;
+                    let value_ty = self.analyze_any_js_expression(&value)?;
+                    properties.push(ObjectPropertyType {
+                        name: key,
+                        type_info: value_ty,
+                    });
+                }
+                AnyJsObjectMember::JsGetterObjectMember(member) => todo!(),
+                AnyJsObjectMember::JsMethodObjectMember(member) => todo!(),
+                _ => todo!(),
+            }
+        }
+        Ok(TypeInfo::Literal(TsLiteralTypeKind::Object(
+            ObjectLiteral { properties },
+        )))
     }
 }
 
