@@ -9,6 +9,8 @@ pub trait Visitor {
 
     fn visit_statement(&mut self, node: &AnyJsStatement);
 
+    fn visit_js_variable_statement(&mut self, node: &JsVariableStatement);
+
     fn visit_ts_declare_statement(&mut self, node: &TsDeclareStatement);
 
     fn visit_js_variable_declaration_clause(&mut self, node: &JsVariableDeclarationClause);

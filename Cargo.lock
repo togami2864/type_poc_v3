@@ -21,6 +21,7 @@ checksum = "512761e0bb2578dd7380c6baaa0f4ce03e84f95e960231d1dec8bf4d7d6e2627"
 name = "analyzer"
 version = "0.1.0"
 dependencies = [
+ "biome_js_parser",
  "biome_js_syntax",
  "biome_rowan",
  "type_info",
@@ -154,6 +155,37 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "biome_js_factory"
+version = "0.5.7"
+source = "git+https://github.com/biomejs/biome.git#0bb86c7bbabebace7ce0f17638f6f58585dae7d6"
+dependencies = [
+ "biome_js_syntax",
+ "biome_rowan",
+]
+
+[[package]]
+name = "biome_js_parser"
+version = "0.5.7"
+source = "git+https://github.com/biomejs/biome.git#0bb86c7bbabebace7ce0f17638f6f58585dae7d6"
+dependencies = [
+ "biome_console",
+ "biome_diagnostics",
+ "biome_js_factory",
+ "biome_js_syntax",
+ "biome_parser",
+ "biome_rowan",
+ "biome_unicode_table",
+ "drop_bomb",
+ "enumflags2",
+ "indexmap",
+ "rustc-hash",
+ "serde",
+ "serde_json",
+ "smallvec",
+ "tracing",
 ]
 
 [[package]]
@@ -704,6 +736,9 @@ name = "smallvec"
 version = "1.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "syn"

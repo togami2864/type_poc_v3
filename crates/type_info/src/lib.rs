@@ -36,7 +36,13 @@ pub enum TsKeywordTypeKind {
 pub enum TsLiteralTypeKind {
     Number(i64),
     String(String),
-    Boolean(String),
+    Boolean(BoolLiteral),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BoolLiteral {
+    True,
+    False,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

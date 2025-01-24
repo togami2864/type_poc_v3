@@ -5,7 +5,7 @@ use biome_js_syntax::JsLanguage;
 use biome_rowan::SyntaxNode;
 use rustc_hash::FxHashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Symbol {
     pub name: String,
     pub ty: TypeInfo,
