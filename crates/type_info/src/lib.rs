@@ -10,6 +10,7 @@ pub enum TypeInfo {
     Interface(TsInterface),
     Literal(TsLiteralTypeKind),
     TypeRef(TsTypeRef),
+    TypeInstantiation(TsTypeInstantiation),
     Unknown,
 }
 
@@ -105,4 +106,10 @@ pub struct TypeParam {
     pub name: String,
     pub constraint: Option<TypeInfo>,
     pub default: Option<TypeInfo>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TsTypeInstantiation {
+    pub base_type: Box<TypeInfo>,
+    pub type_args: Vec<TypeInfo>,
 }

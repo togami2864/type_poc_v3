@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use biome_js_syntax::*;
 use biome_rowan::SyntaxError;
+use rustc_hash::FxHashMap;
 use symbol::{GlobalSymbolTable, Symbol, SymbolTable};
 use type_info::*;
 use visitor::Visitor;
@@ -116,25 +117,88 @@ impl TypeAnalyzer {
         };
 
         let mut type_params = vec![];
-
         if let Some(args) = node.type_arguments() {
-            for arg in args.ts_type_argument_list() {
-                match arg {
-                    Ok(arg) => {
-                        let ty = self.analyze_any_ts_types(&arg);
-                        match ty {
-                            Ok(ty) => type_params.push(ty),
-                            Err(_) => continue,
-                        }
-                    }
+            for arg in args.ts_type_argument_list().into_iter().flatten() {
+                let ty = self.analyze_any_ts_types(&arg);
+
+                match ty {
+                    Ok(ty) => type_params.push(ty),
                     Err(_) => continue,
                 }
             }
         }
-        Ok(TypeInfo::TypeRef(TsTypeRef {
-            name: name.to_owned(),
-            type_params,
-        }))
+
+        if let Some(symbol) = self.get_symbol(&name) {
+            match &symbol.ty {
+                TypeInfo::Interface(interface) => {
+                    if !type_params.is_empty() {
+                        Ok(self.resolve_type_instantiation(&symbol.ty, type_params))
+                    } else {
+                        Ok(symbol.ty.clone())
+                    }
+                }
+                _ => todo!("resolve_type_instantiation {:?}", symbol.ty),
+            }
+        } else {
+            Ok(TypeInfo::TypeRef(TsTypeRef {
+                name: name.to_owned(),
+                type_params,
+            }))
+        }
+    }
+
+    pub fn resolve_type_instantiation(
+        &self,
+        base_type: &TypeInfo,
+        type_args: Vec<TypeInfo>,
+    ) -> TypeInfo {
+        match base_type {
+            TypeInfo::Interface(interface) => {
+                if interface.type_params.len() != type_args.len() {
+                    return TypeInfo::Unknown;
+                }
+
+                let mut type_map = FxHashMap::default();
+                for (param, arg) in interface.type_params.iter().zip(type_args.iter()) {
+                    type_map.insert(param.name.clone(), arg.clone());
+                }
+
+                let resolved_props = interface
+                    .properties
+                    .iter()
+                    .map(|prop| {
+                        let resolved_type = self.substitute_type(&prop.type_info, &type_map);
+                        TsInterfaceProperty {
+                            name: prop.name.clone(),
+                            type_info: resolved_type,
+                            is_optional: prop.is_optional,
+                            is_readonly: prop.is_readonly,
+                        }
+                    })
+                    .collect();
+
+                TypeInfo::Interface(TsInterface {
+                    name: interface.name.clone(),
+                    type_params: vec![],
+                    extends: interface.extends.clone(),
+                    properties: resolved_props,
+                })
+            }
+            _ => todo!("resolve_type_instantiation {:?}", base_type),
+        }
+    }
+
+    fn substitute_type(&self, ty: &TypeInfo, type_map: &FxHashMap<String, TypeInfo>) -> TypeInfo {
+        match ty {
+            TypeInfo::TypeRef(ref_type) => {
+                if let Some(resolved) = type_map.get(&ref_type.name) {
+                    resolved.clone()
+                } else {
+                    ty.clone()
+                }
+            }
+            _ => ty.clone(),
+        }
     }
 
     pub fn analyze_any_ts_type_member(
