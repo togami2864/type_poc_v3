@@ -76,6 +76,7 @@ pub struct TsInterface {
     pub name: String,
     pub extends: Vec<TypeInfo>,
     pub properties: Vec<TsInterfaceProperty>,
+    pub type_params: Vec<TypeParam>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -103,4 +104,5 @@ pub struct TsTypeRef {
 pub struct TypeParam {
     pub name: String,
     pub constraint: Option<TypeInfo>,
+    pub default: Option<TypeInfo>,
 }

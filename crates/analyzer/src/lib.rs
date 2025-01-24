@@ -230,6 +230,36 @@ impl TypeAnalyzer {
             ObjectLiteral { properties },
         )))
     }
+
+    pub fn analyze_type_param(&self, param: &TsTypeParameter) -> TResult<TypeParam> {
+        let name = param
+            .name()
+            .unwrap()
+            .ident_token()?
+            .text_trimmed()
+            .to_string();
+
+        let mut constraint = None;
+        let mut default = None;
+
+        if let Some(constraint_clause) = param.constraint() {
+            if let Ok(ty) = constraint_clause.ty() {
+                constraint = Some(self.analyze_any_ts_types(&ty)?);
+            }
+        }
+
+        if let Some(default_clause) = param.default() {
+            if let Ok(ty) = default_clause.ty() {
+                default = Some(self.analyze_any_ts_types(&ty)?);
+            }
+        }
+
+        Ok(TypeParam {
+            name,
+            constraint,
+            default,
+        })
+    }
 }
 
 impl Visitor for TypeAnalyzer {
@@ -293,6 +323,15 @@ impl Visitor for TypeAnalyzer {
             _ => todo!(),
         };
 
+        let mut type_params = vec![];
+        if let Some(params) = node.type_parameters() {
+            for param in params.items().into_iter().flatten() {
+                if let Ok(param) = self.analyze_type_param(&param) {
+                    type_params.push(param);
+                }
+            }
+        }
+
         let members = node.members();
         let mut properties = vec![];
         for m in members {
@@ -306,6 +345,7 @@ impl Visitor for TypeAnalyzer {
         let ty = TsInterface {
             name: interface_name.to_string(),
             extends: vec![],
+            type_params,
             properties,
         };
         let symbol = Symbol::new(

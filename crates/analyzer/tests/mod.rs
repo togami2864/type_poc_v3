@@ -253,6 +253,7 @@ const h = false;
                 TypeInfo::Interface(TsInterface {
                     name: "Person".to_string(),
                     extends: vec![],
+                    type_params: vec![],
                     properties: vec![
                         TsInterfaceProperty {
                             name: "name".to_string(),
@@ -285,11 +286,103 @@ const h = false;
     }
 
     #[test]
+    fn test_interface_with_generics() {
+        let src = r#"
+        interface Box<T> {
+            value: T;
+        }
+
+        interface Pair<T = string, U extends number> {
+          first: T;
+          second: U;
+        }
+        "#;
+
+        let analyzer = test_analyzer(src, JsFileSource::ts());
+
+        assert_eq!(
+            analyzer.get_symbol("Box").unwrap(),
+            &Symbol::new(
+                "Box".to_string(),
+                TypeInfo::Interface(TsInterface {
+                    name: "Box".to_string(),
+                    extends: vec![],
+                    type_params: vec![TypeParam {
+                        name: "T".to_string(),
+                        constraint: None,
+                        default: None,
+                    }],
+                    properties: vec![TsInterfaceProperty {
+                        name: "value".to_string(),
+                        type_info: TypeInfo::TypeRef(TsTypeRef {
+                            name: "T".to_string(),
+                            type_params: vec![]
+                        }),
+                        is_optional: false,
+                        is_readonly: false,
+                    }]
+                })
+            )
+        );
+
+        assert_eq!(
+            analyzer.get_symbol("Pair").unwrap(),
+            &Symbol::new(
+                "Pair".to_string(),
+                TypeInfo::Interface(TsInterface {
+                    name: "Pair".to_string(),
+                    extends: vec![],
+                    type_params: vec![
+                        TypeParam {
+                            name: "T".to_string(),
+                            constraint: None,
+                            default: Some(TypeInfo::KeywordType(TsKeywordTypeKind::String)),
+                        },
+                        TypeParam {
+                            name: "U".to_string(),
+                            constraint: Some(TypeInfo::KeywordType(TsKeywordTypeKind::Number)),
+                            default: None,
+                        }
+                    ],
+                    properties: vec![
+                        TsInterfaceProperty {
+                            name: "first".to_string(),
+                            type_info: TypeInfo::TypeRef(TsTypeRef {
+                                name: "T".to_string(),
+                                type_params: vec![]
+                            }),
+                            is_optional: false,
+                            is_readonly: false,
+                        },
+                        TsInterfaceProperty {
+                            name: "second".to_string(),
+                            type_info: TypeInfo::TypeRef(TsTypeRef {
+                                name: "U".to_string(),
+                                type_params: vec![]
+                            }),
+                            is_optional: false,
+                            is_readonly: false,
+                        }
+                    ]
+                })
+            )
+        );
+    }
+
+    #[test]
     fn test_simple_type_ref() {
         let src = r#"
         declare const ref: Array;
         declare const withTypeArg: Array<number>;
         declare const nested: Array<Array<string>>;
+
+        interface Person {
+            name: string;
+            age: number;
+            foo?: string;
+            readonly bar: boolean;
+        }
+        declare const person: Person;
         "#;
 
         let analyzer = test_analyzer(src, JsFileSource::ts());
@@ -326,6 +419,17 @@ const h = false;
                         name: "Array".to_string(),
                         type_params: vec![TypeInfo::KeywordType(TsKeywordTypeKind::String)]
                     })]
+                })
+            )
+        );
+
+        assert_eq!(
+            analyzer.get_symbol("person").unwrap(),
+            &Symbol::new(
+                "person".to_string(),
+                TypeInfo::TypeRef(TsTypeRef {
+                    name: "Person".to_string(),
+                    type_params: vec![]
                 })
             )
         );
