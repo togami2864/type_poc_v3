@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use biome_js_syntax::*;
 use biome_rowan::SyntaxError;
-use symbol::{Symbol, SymbolTable};
+use symbol::{GlobalSymbolTable, Symbol, SymbolTable};
 use type_info::*;
 use visitor::Visitor;
 
@@ -12,14 +12,29 @@ type TResult<T> = Result<T, SyntaxError>;
 pub struct TypeAnalyzer {
     current_path: PathBuf,
     symbol_table: SymbolTable,
+    global_symbol_table: GlobalSymbolTable,
 }
 
 impl TypeAnalyzer {
     pub fn new() -> Self {
-        Self {
+        let mut analyzer = Self {
             current_path: PathBuf::new(),
             symbol_table: SymbolTable::new(),
-        }
+            global_symbol_table: GlobalSymbolTable::new(),
+        };
+
+        analyzer.init_builtin_types();
+        analyzer
+    }
+
+    fn init_builtin_types(&mut self) {
+        // let root = parsed.tree()
+        // self.visit(&root);
+        // for (_, symbol_table) in self.symbol_table.symbol_table.iter(){
+        //     for (_, symbol) in symbol_table.iter(){
+        //         self.global_symbol_table.insert(symbol.clone());
+        //     }
+        // }
     }
 
     pub fn insert_new_symbol(&mut self, symbol: Symbol) {

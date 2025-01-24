@@ -1,8 +1,6 @@
 use std::path::PathBuf;
 
 use crate::TypeInfo;
-use biome_js_syntax::JsLanguage;
-use biome_rowan::SyntaxNode;
 use rustc_hash::FxHashMap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -38,5 +36,26 @@ impl SymbolTable {
 
     pub fn get(&self, path: &PathBuf, name: &str) -> Option<&Symbol> {
         self.symbol_table.get(path)?.get(name)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct GlobalSymbolTable {
+    symbol_table: FxHashMap<String, Symbol>,
+}
+
+impl GlobalSymbolTable {
+    pub fn new() -> Self {
+        Self {
+            symbol_table: FxHashMap::default(),
+        }
+    }
+
+    pub fn insert(&mut self, symbol: Symbol) {
+        self.symbol_table.insert(symbol.name.clone(), symbol);
+    }
+
+    pub fn get(&self, name: &str) -> Option<&Symbol> {
+        self.symbol_table.get(name)
     }
 }
