@@ -2,11 +2,8 @@ use std::path::PathBuf;
 
 use biome_js_syntax::*;
 use biome_rowan::SyntaxError;
-use type_info::{
-    symbol::{Symbol, SymbolTable},
-    BoolLiteral, ObjectLiteral, ObjectPropertyType, TsInterfaceProperty, TsKeywordTypeKind,
-    TsLiteralTypeKind, TypeInfo,
-};
+use symbol::{Symbol, SymbolTable};
+use type_info::*;
 use visitor::Visitor;
 
 type TResult<T> = Result<T, SyntaxError>;
@@ -34,10 +31,14 @@ impl TypeAnalyzer {
     }
 
     pub fn analyze_type_annotation(&self, node: TsTypeAnnotation) -> TypeInfo {
-        let ty = node.ty().unwrap();
-        let ty = self.analyze_any_ts_types(&ty);
-        match ty {
-            Ok(ty) => ty,
+        match node.ty() {
+            Ok(ty) => {
+                let ty = self.analyze_any_ts_types(&ty);
+                match ty {
+                    Ok(ty) => ty,
+                    Err(_) => TypeInfo::Unknown,
+                }
+            }
             Err(_) => TypeInfo::Unknown,
         }
     }
@@ -76,36 +77,43 @@ impl TypeAnalyzer {
                 let value = lit.literal_token()?.text().replace("\'", "");
                 TypeInfo::Literal(TsLiteralTypeKind::Number(value.parse().unwrap()))
             }
-
             AnyTsType::TsStringLiteralType(lit) => {
                 let value = lit.literal_token()?.text().replace("\'", "");
                 TypeInfo::Literal(TsLiteralTypeKind::String(value))
             }
-
             AnyTsType::TsNullLiteralType(_) => TypeInfo::KeywordType(TsKeywordTypeKind::Null),
+            _ => todo!("{:?}", node),
+        };
+        Ok(ty)
+    }
 
-            AnyTsType::TsBigintLiteralType(ts_bigint_literal_type) => todo!(),
-            AnyTsType::JsMetavariable(js_metavariable) => todo!(),
-            AnyTsType::TsArrayType(ts_array_type) => todo!(),
-            AnyTsType::TsBogusType(ts_bogus_type) => todo!(),
-            AnyTsType::TsConditionalType(ts_conditional_type) => todo!(),
-            AnyTsType::TsConstructorType(ts_constructor_type) => todo!(),
-            AnyTsType::TsFunctionType(ts_function_type) => todo!(),
-            AnyTsType::TsImportType(ts_import_type) => todo!(),
-            AnyTsType::TsIndexedAccessType(ts_indexed_access_type) => todo!(),
-            AnyTsType::TsInferType(ts_infer_type) => todo!(),
-            AnyTsType::TsIntersectionType(ts_intersection_type) => todo!(),
-            AnyTsType::TsMappedType(ts_mapped_type) => todo!(),
-            AnyTsType::TsNonPrimitiveType(ts_non_primitive_type) => todo!(),
-            AnyTsType::TsObjectType(ts_object_type) => todo!(),
-            AnyTsType::TsParenthesizedType(ts_parenthesized_type) => todo!(),
-            AnyTsType::TsReferenceType(ts_reference_type) => todo!(),
-            AnyTsType::TsTemplateLiteralType(ts_template_literal_type) => todo!(),
-            AnyTsType::TsThisType(ts_this_type) => todo!(),
-            AnyTsType::TsTupleType(ts_tuple_type) => todo!(),
-            AnyTsType::TsTypeOperatorType(ts_type_operator_type) => todo!(),
-            AnyTsType::TsTypeofType(ts_typeof_type) => todo!(),
-            AnyTsType::TsUnionType(ts_union_type) => todo!(),
+    pub fn analyze_any_ts_type_member(
+        &self,
+        node: &AnyTsTypeMember,
+    ) -> TResult<TsInterfaceProperty> {
+        let ty = match node {
+            AnyTsTypeMember::TsPropertySignatureTypeMember(m) => {
+                let name = match m.name().unwrap() {
+                    AnyJsObjectMemberName::JsLiteralMemberName(member) => {
+                        member.value().unwrap().text_trimmed().to_string()
+                    }
+                    _ => todo!("member name {:?}", m.name()),
+                };
+                let is_optional = m.optional_token().is_some();
+                let is_readonly = m.readonly_token().is_some();
+                if let Some(ann) = m.type_annotation() {
+                    let type_info = self.analyze_type_annotation(ann);
+                    TsInterfaceProperty {
+                        name: name.to_string(),
+                        type_info,
+                        is_optional,
+                        is_readonly,
+                    }
+                } else {
+                    todo!()
+                }
+            }
+            _ => todo!("{:?}", node),
         };
         Ok(ty)
     }
@@ -115,45 +123,8 @@ impl TypeAnalyzer {
             AnyJsExpression::AnyJsLiteralExpression(expr) => {
                 self.analyze_js_literal_expression(expr)?
             }
-            AnyJsExpression::JsArrayExpression(js_array_expression) => todo!(),
-            AnyJsExpression::JsArrowFunctionExpression(js_arrow_function_expression) => todo!(),
-            AnyJsExpression::JsAssignmentExpression(js_assignment_expression) => todo!(),
-            AnyJsExpression::JsAwaitExpression(js_await_expression) => todo!(),
-            AnyJsExpression::JsBinaryExpression(js_binary_expression) => todo!(),
-            AnyJsExpression::JsBogusExpression(js_bogus_expression) => todo!(),
-            AnyJsExpression::JsCallExpression(js_call_expression) => todo!(),
-            AnyJsExpression::JsClassExpression(js_class_expression) => todo!(),
-            AnyJsExpression::JsComputedMemberExpression(js_computed_member_expression) => todo!(),
-            AnyJsExpression::JsConditionalExpression(js_conditional_expression) => todo!(),
-            AnyJsExpression::JsFunctionExpression(js_function_expression) => todo!(),
-            AnyJsExpression::JsIdentifierExpression(js_identifier_expression) => todo!(),
-            AnyJsExpression::JsImportCallExpression(js_import_call_expression) => todo!(),
-            AnyJsExpression::JsImportMetaExpression(js_import_meta_expression) => todo!(),
-            AnyJsExpression::JsInExpression(js_in_expression) => todo!(),
-            AnyJsExpression::JsInstanceofExpression(js_instanceof_expression) => todo!(),
-            AnyJsExpression::JsLogicalExpression(js_logical_expression) => todo!(),
-            AnyJsExpression::JsMetavariable(js_metavariable) => todo!(),
-            AnyJsExpression::JsNewExpression(js_new_expression) => todo!(),
-            AnyJsExpression::JsNewTargetExpression(js_new_target_expression) => todo!(),
             AnyJsExpression::JsObjectExpression(node) => self.analyze_js_object_expression(node)?,
-            AnyJsExpression::JsParenthesizedExpression(js_parenthesized_expression) => todo!(),
-            AnyJsExpression::JsPostUpdateExpression(js_post_update_expression) => todo!(),
-            AnyJsExpression::JsPreUpdateExpression(js_pre_update_expression) => todo!(),
-            AnyJsExpression::JsSequenceExpression(js_sequence_expression) => todo!(),
-            AnyJsExpression::JsStaticMemberExpression(js_static_member_expression) => todo!(),
-            AnyJsExpression::JsSuperExpression(js_super_expression) => todo!(),
-            AnyJsExpression::JsTemplateExpression(js_template_expression) => todo!(),
-            AnyJsExpression::JsThisExpression(js_this_expression) => todo!(),
-            AnyJsExpression::JsUnaryExpression(js_unary_expression) => todo!(),
-            AnyJsExpression::JsYieldExpression(js_yield_expression) => todo!(),
-            AnyJsExpression::JsxTagExpression(jsx_tag_expression) => todo!(),
-            AnyJsExpression::TsAsExpression(ts_as_expression) => todo!(),
-            AnyJsExpression::TsInstantiationExpression(ts_instantiation_expression) => todo!(),
-            AnyJsExpression::TsNonNullAssertionExpression(ts_non_null_assertion_expression) => {
-                todo!()
-            }
-            AnyJsExpression::TsSatisfiesExpression(ts_satisfies_expression) => todo!(),
-            AnyJsExpression::TsTypeAssertionExpression(ts_type_assertion_expression) => todo!(),
+            _ => todo!("{:?}", node),
         };
         Ok(ty)
     }
@@ -170,7 +141,6 @@ impl TypeAnalyzer {
                     "false" => TypeInfo::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::False)),
                     _ => unreachable!(),
                 }
-                // TypeInfo::Literal(TsLiteralTypeKind::Boolean(value.text().to_string()))
             }
             AnyJsLiteralExpression::JsNumberLiteralExpression(lit) => {
                 let value = lit.value_token()?;
@@ -184,14 +154,7 @@ impl TypeAnalyzer {
             AnyJsLiteralExpression::JsNullLiteralExpression(_) => {
                 TypeInfo::KeywordType(TsKeywordTypeKind::Null)
             }
-
-            AnyJsLiteralExpression::JsBigintLiteralExpression(js_bigint_literal_expression) => {
-                todo!()
-            }
-
-            AnyJsLiteralExpression::JsRegexLiteralExpression(js_regex_literal_expression) => {
-                todo!()
-            }
+            _ => todo!("{:?}", node),
         };
         Ok(ty)
     }
@@ -210,8 +173,6 @@ impl TypeAnalyzer {
                         type_info: value_ty,
                     });
                 }
-                AnyJsObjectMember::JsGetterObjectMember(member) => todo!(),
-                AnyJsObjectMember::JsMethodObjectMember(member) => todo!(),
                 _ => todo!(),
             }
         }
@@ -247,6 +208,9 @@ impl Visitor for TypeAnalyzer {
             AnyJsStatement::TsDeclareStatement(node) => {
                 self.visit_ts_declare_statement(node);
             }
+            AnyJsStatement::TsInterfaceDeclaration(node) => {
+                self.visit_ts_interface_declaration(node);
+            }
             AnyJsStatement::JsVariableStatement(node) => {
                 self.visit_js_variable_statement(node);
             }
@@ -271,11 +235,40 @@ impl Visitor for TypeAnalyzer {
         });
     }
 
+    fn visit_ts_interface_declaration(&mut self, node: &TsInterfaceDeclaration) {
+        let interface_name = match node.id().unwrap() {
+            AnyTsIdentifierBinding::TsIdentifierBinding(bind) => {
+                bind.name_token().unwrap().text_trimmed().to_string()
+            }
+            _ => todo!(),
+        };
+
+        let members = node.members();
+        let mut properties = vec![];
+        for m in members {
+            let ty = match self.analyze_any_ts_type_member(&m) {
+                Ok(ty) => ty,
+                Err(_) => continue,
+            };
+            properties.push(ty);
+        }
+
+        let ty = TsInterface {
+            name: interface_name.to_string(),
+            extends: vec![],
+            properties,
+        };
+        let symbol = Symbol::new(
+            interface_name.to_string(),
+            type_info::TypeInfo::Interface(ty),
+        );
+        self.insert_new_symbol(symbol);
+    }
+
     fn visit_js_variable_declaration_clause(&mut self, node: &JsVariableDeclarationClause) {
-        for n in node.declaration() {
-            for d in n.declarators() {
-                let d = d.unwrap();
-                self.visit_js_variable_declarator(&d);
+        if let Ok(decl) = node.declaration() {
+            for d in decl.declarators().into_iter().flatten() {
+                self.visit_js_variable_declarator(&d)
             }
         }
     }
