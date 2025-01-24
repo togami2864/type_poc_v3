@@ -283,4 +283,51 @@ const h = false;
             )
         );
     }
+
+    #[test]
+    fn test_simple_type_ref() {
+        let src = r#"
+        declare const ref: Array;
+        declare const withTypeArg: Array<number>;
+        declare const nested: Array<Array<string>>;
+        "#;
+
+        let analyzer = test_analyzer(src, JsFileSource::ts());
+
+        assert_eq!(
+            analyzer.get_symbol("ref").unwrap(),
+            &Symbol::new(
+                "ref".to_string(),
+                TypeInfo::TypeRef(TsTypeRef {
+                    name: "Array".to_string(),
+                    type_params: vec![]
+                })
+            )
+        );
+
+        assert_eq!(
+            analyzer.get_symbol("withTypeArg").unwrap(),
+            &Symbol::new(
+                "withTypeArg".to_string(),
+                TypeInfo::TypeRef(TsTypeRef {
+                    name: "Array".to_string(),
+                    type_params: vec![TypeInfo::KeywordType(TsKeywordTypeKind::Number)]
+                })
+            )
+        );
+
+        assert_eq!(
+            analyzer.get_symbol("nested").unwrap(),
+            &Symbol::new(
+                "nested".to_string(),
+                TypeInfo::TypeRef(TsTypeRef {
+                    name: "Array".to_string(),
+                    type_params: vec![TypeInfo::TypeRef(TsTypeRef {
+                        name: "Array".to_string(),
+                        type_params: vec![TypeInfo::KeywordType(TsKeywordTypeKind::String)]
+                    })]
+                })
+            )
+        );
+    }
 }

@@ -96,7 +96,7 @@ pub struct TsTypeAlias {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TsTypeRef {
     pub name: String,
-    pub type_args: Vec<TypeInfo>,
+    pub type_params: Vec<TypeInfo>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

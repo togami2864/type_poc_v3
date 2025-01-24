@@ -97,9 +97,44 @@ impl TypeAnalyzer {
                 TypeInfo::Literal(TsLiteralTypeKind::String(value))
             }
             AnyTsType::TsNullLiteralType(_) => TypeInfo::KeywordType(TsKeywordTypeKind::Null),
+
+            AnyTsType::TsReferenceType(ref_type) => self.analyze_ts_type_ref(ref_type)?,
             _ => todo!("{:?}", node),
         };
         Ok(ty)
+    }
+
+    pub fn analyze_ts_type_ref(&self, node: &TsReferenceType) -> TResult<TypeInfo> {
+        let name = match node.name()? {
+            AnyTsName::JsReferenceIdentifier(ident) => {
+                let value = ident.value_token()?;
+                value.text_trimmed().to_string()
+            }
+            AnyTsName::TsQualifiedName(qual) => {
+                todo!("qualified name {:?}", qual)
+            }
+        };
+
+        let mut type_params = vec![];
+
+        if let Some(args) = node.type_arguments() {
+            for arg in args.ts_type_argument_list() {
+                match arg {
+                    Ok(arg) => {
+                        let ty = self.analyze_any_ts_types(&arg);
+                        match ty {
+                            Ok(ty) => type_params.push(ty),
+                            Err(_) => continue,
+                        }
+                    }
+                    Err(_) => continue,
+                }
+            }
+        }
+        Ok(TypeInfo::TypeRef(TsTypeRef {
+            name: name.to_owned(),
+            type_params,
+        }))
     }
 
     pub fn analyze_any_ts_type_member(
