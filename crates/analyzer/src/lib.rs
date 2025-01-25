@@ -6,6 +6,8 @@ use symbol::{GlobalSymbolTable, Symbol, SymbolTable};
 use type_info::*;
 use visitor::Visitor;
 
+mod resolver;
+
 type TResult<T> = Result<T, SyntaxError>;
 
 #[derive(Debug, Default)]

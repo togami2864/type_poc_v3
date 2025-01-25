@@ -9,6 +9,8 @@ type_info = { path = "../type_info" }
 
 biome_js_syntax = { workspace = true }
 biome_rowan = { workspace = true }
+rustc-hash = { workspace = true }
+
 
 [dev-dependencies]
 biome_js_parser = { workspace = true }

@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use analyzer::TypeAnalyzer;
     use biome_js_parser::parse;
     use biome_js_syntax::JsFileSource;
@@ -719,6 +721,30 @@ const h = false;
     }
 
     #[test]
+    fn test_resolve_generic_interface() {
+        let src = r#"
+        interface Promise<T> {
+          then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): Promise<TResult1 | TResult2>;
+          catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): Promise<T | TResult>;
+        }
+
+        interface PromiseLike<T> {
+          then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): PromiseLike<TResult1 | TResult2>;
+        }
+
+        declare const foo: () => Promise<string>;
+        "#;
+
+        let analyzer = test_analyzer(src, JsFileSource::ts());
+        analyzer.print_symbol_table();
+        analyzer.print_global_symbol_table();
+
+        let symbol = analyzer.get_symbol("foo").unwrap();
+        let type_info = analyzer.resolve_type_info(symbol, &PathBuf::new());
+        dbg!(&type_info);
+    }
+
+    #[test]
     #[ignore]
     fn quick_test() {
         let src = r#"
@@ -730,6 +756,8 @@ const h = false;
         interface PromiseLike<T> {
           then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): PromiseLike<TResult1 | TResult2>;
         }
+
+        declare const foo: () => Promise<string>;
         "#;
 
         let analyzer = test_analyzer(src, JsFileSource::ts());

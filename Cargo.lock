@@ -24,6 +24,7 @@ dependencies = [
  "biome_js_parser",
  "biome_js_syntax",
  "biome_rowan",
+ "rustc-hash",
  "type_info",
  "visitor",
 ]
@@ -713,6 +714,17 @@ dependencies = [
  "memchr",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "server"
+version = "0.1.0"
+dependencies = [
+ "analyzer",
+ "biome_js_parser",
+ "biome_js_syntax",
+ "biome_rowan",
+ "visitor",
 ]
 
 [[package]]
