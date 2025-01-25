@@ -127,9 +127,69 @@ impl TypeAnalyzer {
                 let inner = ty.ty()?;
                 self.analyze_any_ts_types(&inner)?
             }
+            AnyTsType::TsFunctionType(func) => self.analyze_ts_function_type(func)?,
             _ => todo!("{:?}", node),
         };
         Ok(ty)
+    }
+
+    pub fn analyze_ts_function_type(&self, node: &TsFunctionType) -> TResult<TypeInfo> {
+        let mut type_params = vec![];
+        if let Some(params) = node.type_parameters() {
+            for p in params.items().into_iter().flatten() {
+                let param = self.analyze_type_param(&p)?;
+                type_params.push(param);
+            }
+        };
+
+        let mut params = vec![];
+
+        if let Ok(parameters) = node.parameters() {
+            for p in parameters.items().into_iter().flatten() {
+                match p {
+                    AnyJsParameter::AnyJsFormalParameter(p) => {
+                        match p {
+                            AnyJsFormalParameter::JsFormalParameter(p) => {
+                                let name = p.binding()?;
+                                let is_optional = p.question_mark_token().is_some();
+                                let param_type = if let Some(ann) = p.type_annotation() {
+                                    self.analyze_type_annotation(ann)
+                                } else {
+                                    TypeInfo::Unknown
+                                };
+
+                                params.push(FunctionParam {
+                                    name: name.to_string(),
+                                    is_optional,
+                                    param_type,
+                                });
+                            }
+                            _ => todo!("{:?}", params),
+                        };
+                    }
+                    _ => todo!("{:?}", p),
+                }
+            }
+        }
+
+        let return_type = if let Ok(ty) = node.return_type() {
+            match ty {
+                AnyTsReturnType::AnyTsType(ty) => {
+                    let ty = self.analyze_any_ts_types(&ty)?;
+                    Box::new(ty)
+                }
+                node => todo!("{:?}", node),
+            }
+        } else {
+            Box::new(TypeInfo::Unknown)
+        };
+
+        Ok(TypeInfo::Function(TsFunctionSignature {
+            type_params,
+            this_param: None,
+            params,
+            return_type,
+        }))
     }
 
     pub fn analyze_ts_type_ref(&self, node: &TsReferenceType) -> TResult<TypeInfo> {

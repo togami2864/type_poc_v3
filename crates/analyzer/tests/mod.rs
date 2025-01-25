@@ -505,6 +505,99 @@ const h = false;
     }
 
     #[test]
+    fn test_func_type() {
+        let src = r#"
+        declare const basic: () => void;
+        declare const withParams: (x: number, y: string) => boolean;
+        declare const withOptional: (x?: number) => string;
+        declare const generic: <T>(value: T) => T;
+        "#;
+
+        let analyzer = test_analyzer(src, JsFileSource::ts());
+
+        assert_eq!(
+            analyzer.get_symbol("basic").unwrap(),
+            &Symbol::new(
+                "basic".to_string(),
+                TypeInfo::Function(TsFunctionSignature {
+                    params: vec![],
+                    return_type: Box::new(TypeInfo::KeywordType(TsKeywordTypeKind::Void)),
+                    type_params: vec![],
+                    this_param: None,
+                })
+            )
+        );
+
+        assert_eq!(
+            analyzer.get_symbol("withParams").unwrap(),
+            &Symbol::new(
+                "withParams".to_string(),
+                TypeInfo::Function(TsFunctionSignature {
+                    params: vec![
+                        FunctionParam {
+                            name: "x".to_string(),
+                            param_type: TypeInfo::KeywordType(TsKeywordTypeKind::Number),
+                            is_optional: false
+                        },
+                        FunctionParam {
+                            name: "y".to_string(),
+                            param_type: TypeInfo::KeywordType(TsKeywordTypeKind::String),
+                            is_optional: false
+                        }
+                    ],
+                    return_type: Box::new(TypeInfo::KeywordType(TsKeywordTypeKind::Boolean)),
+                    type_params: vec![],
+                    this_param: None,
+                })
+            )
+        );
+
+        assert_eq!(
+            analyzer.get_symbol("withOptional").unwrap(),
+            &Symbol::new(
+                "withOptional".to_string(),
+                TypeInfo::Function(TsFunctionSignature {
+                    params: vec![FunctionParam {
+                        name: "x".to_string(),
+                        param_type: TypeInfo::KeywordType(TsKeywordTypeKind::Number),
+                        is_optional: true
+                    }],
+                    return_type: Box::new(TypeInfo::KeywordType(TsKeywordTypeKind::String)),
+                    type_params: vec![],
+                    this_param: None,
+                })
+            )
+        );
+
+        assert_eq!(
+            analyzer.get_symbol("generic").unwrap(),
+            &Symbol::new(
+                "generic".to_string(),
+                TypeInfo::Function(TsFunctionSignature {
+                    params: vec![FunctionParam {
+                        name: "value".to_string(),
+                        param_type: TypeInfo::TypeRef(TsTypeRef {
+                            name: "T".to_string(),
+                            type_params: vec![]
+                        }),
+                        is_optional: false
+                    }],
+                    return_type: Box::new(TypeInfo::TypeRef(TsTypeRef {
+                        name: "T".to_string(),
+                        type_params: vec![]
+                    })),
+                    type_params: vec![TypeParam {
+                        name: "T".to_string(),
+                        constraint: None,
+                        default: None
+                    }],
+                    this_param: None,
+                })
+            )
+        );
+    }
+
+    #[test]
     #[ignore]
     fn quick_test() {
         let src = r#"
