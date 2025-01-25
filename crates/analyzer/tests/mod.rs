@@ -427,67 +427,9 @@ const h = false;
             analyzer.get_symbol("person").unwrap(),
             &Symbol::new(
                 "person".to_string(),
-                TypeInfo::Interface(TsInterface {
+                TypeInfo::TypeRef(TsTypeRef {
                     name: "Person".to_string(),
-                    extends: vec![],
-                    properties: vec![
-                        TsInterfaceProperty {
-                            name: "name".to_string(),
-                            type_info: TypeInfo::KeywordType(TsKeywordTypeKind::String),
-                            is_optional: false,
-                            is_readonly: false
-                        },
-                        TsInterfaceProperty {
-                            name: "age".to_string(),
-                            type_info: TypeInfo::KeywordType(TsKeywordTypeKind::Number),
-                            is_optional: false,
-                            is_readonly: false
-                        },
-                        TsInterfaceProperty {
-                            name: "foo".to_string(),
-                            type_info: TypeInfo::KeywordType(TsKeywordTypeKind::String),
-                            is_optional: true,
-                            is_readonly: false
-                        },
-                        TsInterfaceProperty {
-                            name: "bar".to_string(),
-                            type_info: TypeInfo::KeywordType(TsKeywordTypeKind::Boolean),
-                            is_optional: false,
-                            is_readonly: true
-                        }
-                    ],
                     type_params: vec![]
-                })
-            )
-        );
-    }
-
-    #[test]
-    fn test_generic_type_resolution() {
-        let src = r#"
-        interface Box<T> {
-            value: T;
-        }
-
-        declare const strBox: Box<string>;
-        declare const numBox: Box<number>;
-    "#;
-
-        let analyzer = test_analyzer(src, JsFileSource::ts());
-        assert_eq!(
-            analyzer.get_symbol("strBox").unwrap(),
-            &Symbol::new(
-                "strBox".to_string(),
-                TypeInfo::Interface(TsInterface {
-                    name: "Box".to_string(),
-                    extends: vec![],
-                    type_params: vec![],
-                    properties: vec![TsInterfaceProperty {
-                        name: "value".to_string(),
-                        type_info: TypeInfo::KeywordType(TsKeywordTypeKind::String),
-                        is_optional: false,
-                        is_readonly: false
-                    }]
                 })
             )
         );

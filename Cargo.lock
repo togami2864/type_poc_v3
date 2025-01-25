@@ -24,7 +24,6 @@ dependencies = [
  "biome_js_parser",
  "biome_js_syntax",
  "biome_rowan",
- "rustc-hash",
  "type_info",
  "visitor",
 ]
