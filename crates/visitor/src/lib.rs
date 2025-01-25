@@ -5,9 +5,13 @@ pub trait Visitor {
 
     fn visit_module(&mut self, node: &JsModule);
 
+    fn visit_ts_declaration_module(&mut self, node: &TsDeclarationModule);
+
     fn visit_module_item(&mut self, node: &AnyJsModuleItem);
 
     fn visit_statement(&mut self, node: &AnyJsStatement);
+
+    fn visit_js_expression_statement(&mut self, node: &JsExpressionStatement);
 
     fn visit_js_variable_statement(&mut self, node: &JsVariableStatement);
 

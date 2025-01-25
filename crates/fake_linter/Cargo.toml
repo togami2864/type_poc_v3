@@ -1,14 +1,13 @@
 [package]
-name = "analyzer"
+name = "fake_linter"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-visitor = { path = "../visitor" }
+server = { path = "../server" }
 type_info = { path = "../type_info" }
+visitor = { path = "../visitor" }
 
 biome_js_syntax = { workspace = true }
-biome_rowan = { workspace = true }
 biome_js_parser = { workspace = true }
-rustc-hash = { workspace = true }
-
+biome_rowan = { workspace = true }

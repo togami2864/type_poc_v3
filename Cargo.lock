@@ -412,6 +412,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
+name = "fake_linter"
+version = "0.1.0"
+dependencies = [
+ "biome_js_parser",
+ "biome_js_syntax",
+ "biome_rowan",
+ "server",
+ "type_info",
+ "visitor",
+]
+
+[[package]]
 name = "gimli"
 version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -724,6 +736,7 @@ dependencies = [
  "biome_js_parser",
  "biome_js_syntax",
  "biome_rowan",
+ "type_info",
  "visitor",
 ]
 
@@ -846,6 +859,13 @@ dependencies = [
 [[package]]
 name = "type_poc_v3"
 version = "0.1.0"
+dependencies = [
+ "biome_js_parser",
+ "biome_js_syntax",
+ "fake_linter",
+ "server",
+ "visitor",
+]
 
 [[package]]
 name = "unicode-bom"

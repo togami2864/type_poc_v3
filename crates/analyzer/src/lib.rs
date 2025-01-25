@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use biome_js_parser::parse;
 use biome_js_syntax::*;
 use biome_rowan::SyntaxError;
 use symbol::{GlobalSymbolTable, Symbol, SymbolTable};
@@ -18,14 +19,14 @@ pub struct TypeAnalyzer {
 }
 
 impl TypeAnalyzer {
-    pub fn new() -> Self {
+    pub fn new(builtin_path: Vec<PathBuf>) -> Self {
         let mut analyzer = Self {
             current_path: PathBuf::new(),
             symbol_table: SymbolTable::new(),
             global_symbol_table: GlobalSymbolTable::new(),
         };
 
-        analyzer.init_builtin_types();
+        analyzer.init_builtin_types(builtin_path);
         analyzer
     }
 
@@ -44,14 +45,23 @@ impl TypeAnalyzer {
         }
     }
 
-    fn init_builtin_types(&mut self) {
-        // let root = parsed.tree()
-        // self.visit(&root);
-        // for (_, symbol_table) in self.symbol_table.symbol_table.iter(){
-        //     for (_, symbol) in symbol_table.iter(){
-        //         self.global_symbol_table.insert(symbol.clone());
-        //     }
-        // }
+    fn init_builtin_types(&mut self, path: Vec<PathBuf>) {
+        let src_type = JsFileSource::d_ts();
+
+        for p in path {
+            let src = std::fs::read_to_string(&p).unwrap();
+            let parsed = parse(&src, src_type, Default::default());
+            if parsed.has_errors() {
+                panic!("Failed to parse source code: {:?}", parsed.diagnostics());
+            }
+            let root = parsed.tree();
+            self.visit(&root);
+            for (_, symbol_table) in self.symbol_table.iter() {
+                for (_, symbol) in symbol_table.iter() {
+                    self.global_symbol_table.insert(symbol.clone());
+                }
+            }
+        }
     }
 
     pub fn insert_new_symbol(&mut self, symbol: Symbol) {
@@ -60,6 +70,10 @@ impl TypeAnalyzer {
 
     pub fn get_symbol(&self, name: &str) -> Option<&Symbol> {
         self.symbol_table.get(&self.current_path, name)
+    }
+
+    pub fn get_global_symbol(&self, name: &str) -> Option<&Symbol> {
+        self.global_symbol_table.get(name)
     }
 
     pub fn analyze_type_annotation(&self, node: TsTypeAnnotation) -> TypeInfo {
@@ -336,9 +350,90 @@ impl TypeAnalyzer {
                 self.analyze_js_literal_expression(expr)?
             }
             AnyJsExpression::JsObjectExpression(node) => self.analyze_js_object_expression(node)?,
+            AnyJsExpression::JsArrowFunctionExpression(node) => {
+                self.analyze_js_arrow_function_expression(node)?
+            }
             _ => todo!("{:?}", node),
         };
         Ok(ty)
+    }
+
+    pub fn analyze_js_arrow_function_expression(
+        &self,
+        node: &JsArrowFunctionExpression,
+    ) -> TResult<TypeInfo> {
+        let mut type_params = vec![];
+        if let Some(params) = node.type_parameters() {
+            for p in params.items().into_iter().flatten() {
+                let param = self.analyze_type_param(&p)?;
+                type_params.push(param);
+            }
+        };
+
+        let mut params = vec![];
+
+        if let Ok(parameters) = node.parameters() {
+            match parameters {
+                AnyJsArrowFunctionParameters::AnyJsBinding(node) => match node {
+                    AnyJsBinding::JsIdentifierBinding(bind) => {
+                        let name = bind.name_token().unwrap().text_trimmed().to_string();
+                        params.push(FunctionParam {
+                            name,
+                            is_optional: false,
+                            param_type: TypeInfo::Unknown,
+                        });
+                    }
+                    _ => todo!("{:?}", node),
+                },
+                AnyJsArrowFunctionParameters::JsParameters(param) => {
+                    for p in param.items().into_iter().flatten() {
+                        match p {
+                            AnyJsParameter::AnyJsFormalParameter(p) => {
+                                match p {
+                                    AnyJsFormalParameter::JsFormalParameter(p) => {
+                                        let name = p.binding()?;
+                                        let is_optional = p.question_mark_token().is_some();
+                                        let param_type = if let Some(ann) = p.type_annotation() {
+                                            self.analyze_type_annotation(ann)
+                                        } else {
+                                            TypeInfo::Unknown
+                                        };
+
+                                        params.push(FunctionParam {
+                                            name: name.to_string(),
+                                            is_optional,
+                                            param_type,
+                                        });
+                                    }
+                                    _ => todo!("{:?}", params),
+                                };
+                            }
+                            _ => todo!("{:?}", p),
+                        }
+                    }
+                }
+            }
+        }
+
+        let return_type = if let Some(ty) = node.return_type_annotation() {
+            let ty = ty.ty()?;
+            match ty {
+                AnyTsReturnType::AnyTsType(any_ts_type) => {
+                    let ty = self.analyze_any_ts_types(&any_ts_type)?;
+                    Box::new(ty)
+                }
+                node => todo!("{:?}", node),
+            }
+        } else {
+            Box::new(TypeInfo::Unknown)
+        };
+
+        Ok(TypeInfo::Function(TsFunctionSignature {
+            type_params,
+            this_param: None,
+            params,
+            return_type,
+        }))
     }
 
     pub fn analyze_js_literal_expression(
@@ -428,11 +523,18 @@ impl Visitor for TypeAnalyzer {
     fn visit(&mut self, node: &AnyJsRoot) {
         match node {
             AnyJsRoot::JsModule(node) => self.visit_module(node),
+            AnyJsRoot::TsDeclarationModule(node) => self.visit_ts_declaration_module(node),
             node => todo!("{:?}", node),
         }
     }
 
     fn visit_module(&mut self, node: &JsModule) {
+        for item in node.items() {
+            self.visit_module_item(&item);
+        }
+    }
+
+    fn visit_ts_declaration_module(&mut self, node: &TsDeclarationModule) {
         for item in node.items() {
             self.visit_module_item(&item);
         }
@@ -456,9 +558,14 @@ impl Visitor for TypeAnalyzer {
             AnyJsStatement::JsVariableStatement(node) => {
                 self.visit_js_variable_statement(node);
             }
+            AnyJsStatement::JsExpressionStatement(node) => {
+                self.visit_js_expression_statement(node);
+            }
             node => todo!("{:?}", node),
         }
     }
+
+    fn visit_js_expression_statement(&mut self, node: &JsExpressionStatement) {}
 
     fn visit_js_variable_statement(&mut self, node: &JsVariableStatement) {
         if let Ok(list) = node.declaration() {

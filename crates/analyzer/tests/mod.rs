@@ -16,7 +16,7 @@ mod tests {
             panic!("Failed to parse source code: {:?}", parsed.diagnostics());
         }
         let root = parsed.tree();
-        let mut analyzer = TypeAnalyzer::new();
+        let mut analyzer = TypeAnalyzer::new(vec![]);
         analyzer.visit(&root);
         analyzer
     }
@@ -714,6 +714,29 @@ const h = false;
                         constraint: None,
                         default: None
                     }],
+                    this_param: None,
+                })
+            )
+        );
+    }
+
+    #[test]
+    fn test_arrow_function() {
+        let src = r#"
+        const foo = (): Promise<string> => {};"#;
+
+        let analyzer = test_analyzer(src, JsFileSource::ts());
+        assert_eq!(
+            analyzer.get_symbol("foo").unwrap(),
+            &Symbol::new(
+                "foo".to_string(),
+                TypeInfo::Function(TsFunctionSignature {
+                    params: vec![],
+                    return_type: Box::new(TypeInfo::TypeRef(TsTypeRef {
+                        name: "Promise".to_string(),
+                        type_params: vec![TypeInfo::KeywordType(TsKeywordTypeKind::String)]
+                    })),
+                    type_params: vec![],
                     this_param: None,
                 })
             )

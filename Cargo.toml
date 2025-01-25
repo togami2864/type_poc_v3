@@ -8,6 +8,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+server = { path = "crates/server" }
+fake_linter = { path = "crates/fake_linter" }
+visitor = { path = "crates/visitor" }
+
+biome_js_parser = { git = "https://github.com/biomejs/biome.git" }
+biome_js_syntax = { git = "https://github.com/biomejs/biome.git" }
+
 
 [workspace.dependencies]
 biome_analyze = { git = "https://github.com/biomejs/biome.git" }
