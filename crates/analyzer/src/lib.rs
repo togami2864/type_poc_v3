@@ -104,16 +104,29 @@ impl TypeAnalyzer {
                 }
             }
             AnyTsType::TsNumberLiteralType(lit) => {
-                let value = lit.literal_token()?.text().replace("\'", "");
+                let value = lit.literal_token()?.text_trimmed().to_string();
+                dbg!(&value);
                 TypeInfo::Literal(TsLiteralTypeKind::Number(value.parse().unwrap()))
             }
             AnyTsType::TsStringLiteralType(lit) => {
-                let value = lit.literal_token()?.text().replace("\'", "");
+                let value = lit.literal_token()?.text_trimmed().to_string();
                 TypeInfo::Literal(TsLiteralTypeKind::String(value))
             }
             AnyTsType::TsNullLiteralType(_) => TypeInfo::KeywordType(TsKeywordTypeKind::Null),
 
             AnyTsType::TsReferenceType(ref_type) => self.analyze_ts_type_ref(ref_type)?,
+            AnyTsType::TsUnionType(union) => {
+                let mut types = vec![];
+                for ty in union.types().into_iter().flatten() {
+                    let t = self.analyze_any_ts_types(&ty)?;
+                    types.push(t);
+                }
+                TypeInfo::Union(types)
+            }
+            AnyTsType::TsParenthesizedType(ty) => {
+                let inner = ty.ty()?;
+                self.analyze_any_ts_types(&inner)?
+            }
             _ => todo!("{:?}", node),
         };
         Ok(ty)

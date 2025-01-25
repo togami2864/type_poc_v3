@@ -180,7 +180,7 @@ const h = false;
             analyzer.get_symbol("b").unwrap(),
             &Symbol::new(
                 "b".to_string(),
-                TypeInfo::Literal(TsLiteralTypeKind::String("hello".to_string()))
+                TypeInfo::Literal(TsLiteralTypeKind::String("'hello'".to_string()))
             )
         );
 
@@ -431,6 +431,75 @@ const h = false;
                     name: "Person".to_string(),
                     type_params: vec![]
                 })
+            )
+        );
+    }
+
+    #[test]
+    fn test_union_test() {
+        let src = r#"
+        declare const basic: string | number;
+        declare const withLiteral: "foo" | 42 | true;
+        declare const withRef: Array<string> | Promise<number>;
+        declare const nested: (string | number) | (boolean | null);
+        "#;
+
+        let analyzer = test_analyzer(src, JsFileSource::ts());
+
+        assert_eq!(
+            analyzer.get_symbol("basic").unwrap(),
+            &Symbol::new(
+                "basic".to_string(),
+                TypeInfo::Union(vec![
+                    TypeInfo::KeywordType(TsKeywordTypeKind::String),
+                    TypeInfo::KeywordType(TsKeywordTypeKind::Number)
+                ])
+            )
+        );
+
+        assert_eq!(
+            analyzer.get_symbol("withLiteral").unwrap(),
+            &Symbol::new(
+                "withLiteral".to_string(),
+                TypeInfo::Union(vec![
+                    TypeInfo::Literal(TsLiteralTypeKind::String("\"foo\"".to_string())),
+                    TypeInfo::Literal(TsLiteralTypeKind::Number(42)),
+                    TypeInfo::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::True))
+                ])
+            )
+        );
+
+        assert_eq!(
+            analyzer.get_symbol("withRef").unwrap(),
+            &Symbol::new(
+                "withRef".to_string(),
+                TypeInfo::Union(vec![
+                    TypeInfo::TypeRef(TsTypeRef {
+                        name: "Array".to_string(),
+                        type_params: vec![TypeInfo::KeywordType(TsKeywordTypeKind::String)]
+                    }),
+                    TypeInfo::TypeRef(TsTypeRef {
+                        name: "Promise".to_string(),
+                        type_params: vec![TypeInfo::KeywordType(TsKeywordTypeKind::Number)]
+                    })
+                ])
+            )
+        );
+
+        assert_eq!(
+            analyzer.get_symbol("nested").unwrap(),
+            &Symbol::new(
+                "nested".to_string(),
+                TypeInfo::Union(vec![
+                    TypeInfo::Union(vec![
+                        TypeInfo::KeywordType(TsKeywordTypeKind::String),
+                        TypeInfo::KeywordType(TsKeywordTypeKind::Number)
+                    ]),
+                    TypeInfo::Union(vec![
+                        TypeInfo::KeywordType(TsKeywordTypeKind::Boolean),
+                        TypeInfo::KeywordType(TsKeywordTypeKind::Null)
+                    ])
+                ])
             )
         );
     }

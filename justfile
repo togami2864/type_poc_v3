@@ -3,3 +3,7 @@ create-crate crate_name:
 
 test crate_name:
   cargo test -p {{crate_name}}
+
+
+ready:
+  cargo test --all
