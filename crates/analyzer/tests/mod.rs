@@ -242,6 +242,14 @@ const h = false;
             foo?: string;
             readonly bar: boolean;
         }
+
+        interface MethodSignature {
+          basic(): void;
+          withParams(x: number, y: string): boolean;
+          optional?(): void;
+          generic<T>(value: T): T;
+          complex(): string | Promise<number>;
+        }
         "#;
 
         let analyzer = test_analyzer(src, JsFileSource::ts());
@@ -278,6 +286,119 @@ const h = false;
                             type_info: TypeInfo::KeywordType(TsKeywordTypeKind::Boolean),
                             is_optional: false,
                             is_readonly: true,
+                        }
+                    ]
+                })
+            )
+        );
+
+        assert_eq!(
+            analyzer.get_symbol("MethodSignature").unwrap(),
+            &Symbol::new(
+                "MethodSignature".to_string(),
+                TypeInfo::Interface(TsInterface {
+                    name: "MethodSignature".to_string(),
+                    extends: vec![],
+                    type_params: vec![],
+                    properties: vec![
+                        TsInterfaceProperty {
+                            name: "basic".to_string(),
+                            type_info: TypeInfo::Function(TsFunctionSignature {
+                                params: vec![],
+                                return_type: Box::new(TypeInfo::KeywordType(
+                                    TsKeywordTypeKind::Void
+                                )),
+                                type_params: vec![],
+                                this_param: None,
+                            }),
+                            is_optional: false,
+                            is_readonly: false,
+                        },
+                        TsInterfaceProperty {
+                            name: "withParams".to_string(),
+                            type_info: TypeInfo::Function(TsFunctionSignature {
+                                params: vec![
+                                    FunctionParam {
+                                        name: "x".to_string(),
+                                        param_type: TypeInfo::KeywordType(
+                                            TsKeywordTypeKind::Number
+                                        ),
+                                        is_optional: false
+                                    },
+                                    FunctionParam {
+                                        name: "y".to_string(),
+                                        param_type: TypeInfo::KeywordType(
+                                            TsKeywordTypeKind::String
+                                        ),
+                                        is_optional: false
+                                    }
+                                ],
+                                return_type: Box::new(TypeInfo::KeywordType(
+                                    TsKeywordTypeKind::Boolean
+                                )),
+                                type_params: vec![],
+                                this_param: None,
+                            }),
+                            is_optional: false,
+                            is_readonly: false,
+                        },
+                        TsInterfaceProperty {
+                            name: "optional".to_string(),
+                            type_info: TypeInfo::Function(TsFunctionSignature {
+                                params: vec![],
+                                return_type: Box::new(TypeInfo::KeywordType(
+                                    TsKeywordTypeKind::Void
+                                )),
+                                type_params: vec![],
+                                this_param: None,
+                            }),
+                            is_optional: true,
+                            is_readonly: false,
+                        },
+                        TsInterfaceProperty {
+                            name: "generic".to_string(),
+                            type_info: TypeInfo::Function(TsFunctionSignature {
+                                params: vec![FunctionParam {
+                                    name: "value".to_string(),
+                                    param_type: TypeInfo::TypeRef(TsTypeRef {
+                                        name: "T".to_string(),
+                                        type_params: vec![]
+                                    }),
+                                    is_optional: false
+                                }],
+                                return_type: Box::new(TypeInfo::TypeRef(TsTypeRef {
+                                    name: "T".to_string(),
+                                    type_params: vec![]
+                                })),
+                                type_params: vec![TypeParam {
+                                    name: "T".to_string(),
+                                    constraint: None,
+                                    default: None
+                                }],
+
+                                this_param: None,
+                            }),
+                            is_optional: false,
+                            is_readonly: false,
+                        },
+                        TsInterfaceProperty {
+                            name: "complex".to_string(),
+                            type_info: TypeInfo::Function(TsFunctionSignature {
+                                params: vec![],
+                                return_type: Box::new(TypeInfo::Union(vec![
+                                    TypeInfo::KeywordType(TsKeywordTypeKind::String),
+                                    TypeInfo::TypeRef(TsTypeRef {
+                                        name: "Promise".to_string(),
+                                        type_params: vec![TypeInfo::KeywordType(
+                                            TsKeywordTypeKind::Number
+                                        )]
+                                    })
+                                ])),
+                                type_params: vec![],
+                                this_param: None,
+                            }),
+                            is_optional: false,
+                            is_readonly: false,
                         }
                     ]
                 })
@@ -603,6 +724,11 @@ const h = false;
         let src = r#"
         interface Promise<T> {
           then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): Promise<TResult1 | TResult2>;
+          catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): Promise<T | TResult>;
+        }
+
+        interface PromiseLike<T> {
+          then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): PromiseLike<TResult1 | TResult2>;
         }
         "#;
 

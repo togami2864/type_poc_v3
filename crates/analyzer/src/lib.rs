@@ -251,6 +251,78 @@ impl TypeAnalyzer {
                     todo!()
                 }
             }
+            AnyTsTypeMember::TsMethodSignatureTypeMember(member) => {
+                let name = match member.name()? {
+                    AnyJsObjectMemberName::JsLiteralMemberName(literal) => {
+                        literal.value().unwrap().text_trimmed().to_string()
+                    }
+                    AnyJsObjectMemberName::JsComputedMemberName(js_computed_member_name) => todo!(),
+                    AnyJsObjectMemberName::JsMetavariable(js_metavariable) => todo!(),
+                };
+
+                let is_optional = member.optional_token().is_some();
+
+                let mut type_params = vec![];
+                if let Some(ty_params) = member.type_parameters() {
+                    for param in ty_params.items().into_iter().flatten() {
+                        let param = self.analyze_type_param(&param)?;
+                        type_params.push(param);
+                    }
+                };
+
+                let mut params = vec![];
+                if let Ok(parameter) = member.parameters() {
+                    for p in parameter.items().into_iter().flatten() {
+                        match p {
+                            AnyJsParameter::AnyJsFormalParameter(p) => {
+                                match p {
+                                    AnyJsFormalParameter::JsFormalParameter(p) => {
+                                        let name = p.binding()?;
+                                        let is_optional = p.question_mark_token().is_some();
+                                        let param_type = if let Some(ann) = p.type_annotation() {
+                                            self.analyze_type_annotation(ann)
+                                        } else {
+                                            TypeInfo::Unknown
+                                        };
+                                        params.push(FunctionParam {
+                                            name: name.to_string(),
+                                            is_optional,
+                                            param_type,
+                                        });
+                                    }
+                                    _ => todo!("{:?}", params),
+                                };
+                            }
+                            _ => todo!("{:?}", p),
+                        }
+                    }
+                }
+
+                let return_type = if let Some(ty) = member.return_type_annotation() {
+                    let ret_ty = ty.ty()?;
+                    match ret_ty {
+                        AnyTsReturnType::AnyTsType(ty) => {
+                            let ty = self.analyze_any_ts_types(&ty)?;
+                            Box::new(ty)
+                        }
+                        node => todo!("{:?}", node),
+                    }
+                } else {
+                    Box::new(TypeInfo::Unknown)
+                };
+
+                TsInterfaceProperty {
+                    name: name.to_string(),
+                    type_info: TypeInfo::Function(TsFunctionSignature {
+                        type_params,
+                        this_param: None,
+                        params,
+                        return_type,
+                    }),
+                    is_optional,
+                    is_readonly: false,
+                }
+            }
             _ => todo!("{:?}", node),
         };
         Ok(ty)
