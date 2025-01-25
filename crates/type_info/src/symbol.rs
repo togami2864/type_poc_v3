@@ -16,46 +16,46 @@ impl Symbol {
 }
 
 #[derive(Debug, Default)]
-pub struct SymbolTable {
-    symbol_table: FxHashMap<PathBuf, FxHashMap<String, Symbol>>,
-}
+pub struct SymbolTable(FxHashMap<PathBuf, FxHashMap<String, Symbol>>);
 
 impl SymbolTable {
     pub fn new() -> Self {
-        Self {
-            symbol_table: FxHashMap::default(),
-        }
+        Self(FxHashMap::default())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&PathBuf, &FxHashMap<String, Symbol>)> {
+        self.0.iter()
     }
 
     pub fn insert(&mut self, path: PathBuf, symbol: Symbol) {
-        self.symbol_table
+        self.0
             .entry(path)
             .or_default()
             .insert(symbol.name.clone(), symbol);
     }
 
     pub fn get(&self, path: &PathBuf, name: &str) -> Option<&Symbol> {
-        self.symbol_table.get(path)?.get(name)
+        self.0.get(path)?.get(name)
     }
 }
 
 #[derive(Debug, Default)]
-pub struct GlobalSymbolTable {
-    symbol_table: FxHashMap<String, Symbol>,
-}
+pub struct GlobalSymbolTable(FxHashMap<String, Symbol>);
 
 impl GlobalSymbolTable {
     pub fn new() -> Self {
-        Self {
-            symbol_table: FxHashMap::default(),
-        }
+        Self(FxHashMap::default())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&String, &Symbol)> {
+        self.0.iter()
     }
 
     pub fn insert(&mut self, symbol: Symbol) {
-        self.symbol_table.insert(symbol.name.clone(), symbol);
+        self.0.insert(symbol.name.clone(), symbol);
     }
 
     pub fn get(&self, name: &str) -> Option<&Symbol> {
-        self.symbol_table.get(name)
+        self.0.get(name)
     }
 }

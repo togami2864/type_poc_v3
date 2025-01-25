@@ -27,6 +27,21 @@ impl TypeAnalyzer {
         analyzer
     }
 
+    pub fn print_symbol_table(&self) {
+        for (path, symbol_table) in self.symbol_table.iter() {
+            println!("Path: {:?}", path);
+            for (name, symbol) in symbol_table.iter() {
+                println!("  \x1b[32m{}\x1b[0m: {:?}\n", name, symbol);
+            }
+        }
+    }
+
+    pub fn print_global_symbol_table(&self) {
+        for (name, symbol) in self.global_symbol_table.iter() {
+            println!("  \x1b[32m{}\x1b[0m: {:?}\n", name, symbol);
+        }
+    }
+
     fn init_builtin_types(&mut self) {
         // let root = parsed.tree()
         // self.visit(&root);

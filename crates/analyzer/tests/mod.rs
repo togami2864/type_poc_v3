@@ -434,4 +434,18 @@ const h = false;
             )
         );
     }
+
+    #[test]
+    #[ignore]
+    fn quick_test() {
+        let src = r#"
+        interface Promise<T> {
+          then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): Promise<TResult1 | TResult2>;
+        }
+        "#;
+
+        let analyzer = test_analyzer(src, JsFileSource::ts());
+        analyzer.print_symbol_table();
+        analyzer.print_global_symbol_table();
+    }
 }
