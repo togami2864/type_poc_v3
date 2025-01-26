@@ -120,7 +120,7 @@ impl TypeAnalyzer {
                     .properties
                     .iter()
                     .map(|prop| {
-                        let resolved_type = self.substitute_type(&prop.type_info, &type_map);
+                        let resolved_type = substitute_type(&prop.type_info, &type_map);
                         TsInterfaceProperty {
                             name: prop.name.clone(),
                             type_info: resolved_type,
@@ -139,54 +139,46 @@ impl TypeAnalyzer {
             _ => base_type.clone(),
         }
     }
+}
 
-    pub fn substitute_type(
-        &self,
-        ty: &TypeInfo,
-        type_map: &FxHashMap<String, TypeInfo>,
-    ) -> TypeInfo {
-        match ty {
-            TypeInfo::TypeRef(ref_type) => {
-                if let Some(ty) = type_map.get(&ref_type.name) {
-                    return ty.clone();
+pub fn substitute_type(ty: &TypeInfo, type_map: &FxHashMap<String, TypeInfo>) -> TypeInfo {
+    match ty {
+        TypeInfo::TypeRef(ref_type) => {
+            if let Some(ty) = type_map.get(&ref_type.name) {
+                return ty.clone();
+            }
+            if !ref_type.type_params.is_empty() {
+                let mut resolved_type = vec![];
+                for r in ref_type.type_params.iter() {
+                    let ty = substitute_type(r, type_map);
+                    resolved_type.push(ty);
                 }
-                if !ref_type.type_params.is_empty() {
-                    let mut resolved_type = vec![];
-                    for r in ref_type.type_params.iter() {
-                        let ty = self.substitute_type(r, type_map);
-                        resolved_type.push(ty);
-                    }
-                    TypeInfo::TypeRef(TsTypeRef {
-                        name: ref_type.name.clone(),
-                        type_params: resolved_type,
-                    })
-                } else {
-                    ty.clone()
-                }
+                TypeInfo::TypeRef(TsTypeRef {
+                    name: ref_type.name.clone(),
+                    type_params: resolved_type,
+                })
+            } else {
+                ty.clone()
             }
-            TypeInfo::Union(types) => {
-                let resolved_types = types
-                    .iter()
-                    .map(|t| self.substitute_type(t, type_map))
-                    .collect();
-                TypeInfo::Union(resolved_types)
-            }
-            TypeInfo::Function(func) => {
-                let mut resolved_func = func.clone();
-                resolved_func.params = resolved_func
-                    .params
-                    .iter()
-                    .map(|param| FunctionParam {
-                        name: param.name.clone(),
-                        param_type: self.substitute_type(&param.param_type, type_map),
-                        is_optional: param.is_optional,
-                    })
-                    .collect();
-                resolved_func.return_type =
-                    Box::new(self.substitute_type(&func.return_type, type_map));
-                TypeInfo::Function(resolved_func)
-            }
-            _ => ty.clone(),
         }
+        TypeInfo::Union(types) => {
+            let resolved_types = types.iter().map(|t| substitute_type(t, type_map)).collect();
+            TypeInfo::Union(resolved_types)
+        }
+        TypeInfo::Function(func) => {
+            let mut resolved_func = func.clone();
+            resolved_func.params = resolved_func
+                .params
+                .iter()
+                .map(|param| FunctionParam {
+                    name: param.name.clone(),
+                    param_type: substitute_type(&param.param_type, type_map),
+                    is_optional: param.is_optional,
+                })
+                .collect();
+            resolved_func.return_type = Box::new(substitute_type(&func.return_type, type_map));
+            TypeInfo::Function(resolved_func)
+        }
+        _ => ty.clone(),
     }
 }

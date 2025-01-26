@@ -7,7 +7,11 @@ use symbol::{GlobalSymbolTable, Symbol, SymbolTable};
 use type_info::*;
 use visitor::Visitor;
 
+mod expr;
+mod function;
 mod resolver;
+mod stmt;
+mod ts;
 
 type TResult<T> = Result<T, SyntaxError>;
 
@@ -75,508 +79,6 @@ impl TypeAnalyzer {
     pub fn get_global_symbol(&self, name: &str) -> Option<&Symbol> {
         self.global_symbol_table.get(name)
     }
-
-    pub fn analyze_type_annotation(&self, node: TsTypeAnnotation) -> TypeInfo {
-        match node.ty() {
-            Ok(ty) => {
-                let ty = self.analyze_any_ts_types(&ty);
-                match ty {
-                    Ok(ty) => ty,
-                    Err(_) => TypeInfo::Unknown,
-                }
-            }
-            Err(_) => TypeInfo::Unknown,
-        }
-    }
-
-    pub fn analyze_expression(&self, node: &AnyJsExpression) -> TypeInfo {
-        let ty = self.analyze_any_js_expression(node);
-        match ty {
-            Ok(ty) => ty,
-            Err(_) => TypeInfo::Unknown,
-        }
-    }
-
-    pub fn analyze_any_ts_types(&self, node: &AnyTsType) -> TResult<TypeInfo> {
-        let ty = match node {
-            AnyTsType::TsAnyType(_) => TypeInfo::KeywordType(TsKeywordTypeKind::Any),
-            AnyTsType::TsBigintType(_) => TypeInfo::KeywordType(TsKeywordTypeKind::BigInt),
-            AnyTsType::TsBooleanType(_) => TypeInfo::KeywordType(TsKeywordTypeKind::Boolean),
-            AnyTsType::TsNeverType(_) => TypeInfo::KeywordType(TsKeywordTypeKind::Never),
-            AnyTsType::TsNumberType(_) => TypeInfo::KeywordType(TsKeywordTypeKind::Number),
-            AnyTsType::TsStringType(_) => TypeInfo::KeywordType(TsKeywordTypeKind::String),
-            AnyTsType::TsSymbolType(_) => TypeInfo::KeywordType(TsKeywordTypeKind::Symbol),
-            AnyTsType::TsUndefinedType(_) => TypeInfo::KeywordType(TsKeywordTypeKind::Undefined),
-            AnyTsType::TsVoidType(_) => TypeInfo::KeywordType(TsKeywordTypeKind::Void),
-            AnyTsType::TsUnknownType(_) => TypeInfo::KeywordType(TsKeywordTypeKind::Unknown),
-
-            AnyTsType::TsBooleanLiteralType(lit) => {
-                let literal = lit.literal()?;
-                let value = literal.text_trimmed();
-                match value {
-                    "true" => TypeInfo::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::True)),
-                    "false" => TypeInfo::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::False)),
-                    _ => unreachable!(),
-                }
-            }
-            AnyTsType::TsNumberLiteralType(lit) => {
-                let value = lit.literal_token()?.text_trimmed().to_string();
-                dbg!(&value);
-                TypeInfo::Literal(TsLiteralTypeKind::Number(value.parse().unwrap()))
-            }
-            AnyTsType::TsStringLiteralType(lit) => {
-                let value = lit.literal_token()?.text_trimmed().to_string();
-                TypeInfo::Literal(TsLiteralTypeKind::String(value))
-            }
-            AnyTsType::TsNullLiteralType(_) => TypeInfo::KeywordType(TsKeywordTypeKind::Null),
-
-            AnyTsType::TsReferenceType(ref_type) => self.analyze_ts_type_ref(ref_type)?,
-            AnyTsType::TsUnionType(union) => {
-                let mut types = vec![];
-                for ty in union.types().into_iter().flatten() {
-                    let t = self.analyze_any_ts_types(&ty)?;
-                    types.push(t);
-                }
-                TypeInfo::Union(types)
-            }
-            AnyTsType::TsParenthesizedType(ty) => {
-                let inner = ty.ty()?;
-                self.analyze_any_ts_types(&inner)?
-            }
-            AnyTsType::TsFunctionType(func) => self.analyze_ts_function_type(func)?,
-            _ => todo!("{:?}", node),
-        };
-        Ok(ty)
-    }
-
-    pub fn analyze_js_function_declaration(
-        &self,
-        node: &JsFunctionDeclaration,
-    ) -> TResult<TypeInfo> {
-        let is_async = node.async_token().is_some();
-
-        let mut params = vec![];
-
-        if let Ok(param) = node.parameters() {
-            for p in param.items().into_iter().flatten() {
-                match p {
-                    AnyJsParameter::AnyJsFormalParameter(p) => {
-                        match p {
-                            AnyJsFormalParameter::JsFormalParameter(p) => {
-                                let name = p.binding()?;
-                                let is_optional = p.question_mark_token().is_some();
-                                let param_type = if let Some(ann) = p.type_annotation() {
-                                    self.analyze_type_annotation(ann)
-                                } else {
-                                    TypeInfo::Unknown
-                                };
-
-                                params.push(FunctionParam {
-                                    name: name.to_string(),
-                                    is_optional,
-                                    param_type,
-                                });
-                            }
-                            _ => todo!("{:?}", params),
-                        };
-                    }
-                    _ => todo!("{:?}", p),
-                }
-            }
-        }
-
-        let return_type = if let Some(ret_ty) = node.return_type_annotation() {
-            let ty = ret_ty.ty()?;
-            match ty {
-                AnyTsReturnType::AnyTsType(ty) => self.analyze_any_ts_types(&ty)?,
-                _ => TypeInfo::Unknown,
-            }
-        } else {
-            TypeInfo::Unknown
-        };
-
-        Ok(TypeInfo::Function(TsFunctionSignature {
-            //todo
-            type_params: vec![],
-            this_param: None,
-            params,
-            return_type: Box::new(return_type),
-            is_async,
-        }))
-    }
-
-    pub fn analyze_ts_function_type(&self, node: &TsFunctionType) -> TResult<TypeInfo> {
-        let mut type_params = vec![];
-        if let Some(params) = node.type_parameters() {
-            for p in params.items().into_iter().flatten() {
-                let param = self.analyze_type_param(&p)?;
-                type_params.push(param);
-            }
-        };
-
-        let mut params = vec![];
-
-        if let Ok(parameters) = node.parameters() {
-            for p in parameters.items().into_iter().flatten() {
-                match p {
-                    AnyJsParameter::AnyJsFormalParameter(p) => {
-                        match p {
-                            AnyJsFormalParameter::JsFormalParameter(p) => {
-                                let name = p.binding()?;
-                                let is_optional = p.question_mark_token().is_some();
-                                let param_type = if let Some(ann) = p.type_annotation() {
-                                    self.analyze_type_annotation(ann)
-                                } else {
-                                    TypeInfo::Unknown
-                                };
-
-                                params.push(FunctionParam {
-                                    name: name.to_string(),
-                                    is_optional,
-                                    param_type,
-                                });
-                            }
-                            _ => todo!("{:?}", params),
-                        };
-                    }
-                    _ => todo!("{:?}", p),
-                }
-            }
-        }
-
-        let return_type = if let Ok(ty) = node.return_type() {
-            match ty {
-                AnyTsReturnType::AnyTsType(ty) => {
-                    let ty = self.analyze_any_ts_types(&ty)?;
-                    Box::new(ty)
-                }
-                node => todo!("{:?}", node),
-            }
-        } else {
-            Box::new(TypeInfo::Unknown)
-        };
-
-        Ok(TypeInfo::Function(TsFunctionSignature {
-            type_params,
-            this_param: None,
-            params,
-            return_type,
-            is_async: false,
-        }))
-    }
-
-    pub fn analyze_ts_type_ref(&self, node: &TsReferenceType) -> TResult<TypeInfo> {
-        let name = match node.name()? {
-            AnyTsName::JsReferenceIdentifier(ident) => {
-                let value = ident.value_token()?;
-                value.text_trimmed().to_string()
-            }
-            AnyTsName::TsQualifiedName(qual) => {
-                todo!("qualified name {:?}", qual)
-            }
-        };
-
-        let mut type_params = vec![];
-
-        if let Some(args) = node.type_arguments() {
-            for arg in args.ts_type_argument_list() {
-                match arg {
-                    Ok(arg) => {
-                        let ty = self.analyze_any_ts_types(&arg);
-                        match ty {
-                            Ok(ty) => type_params.push(ty),
-                            Err(_) => continue,
-                        }
-                    }
-                    Err(_) => continue,
-                }
-            }
-        }
-        Ok(TypeInfo::TypeRef(TsTypeRef {
-            name: name.to_owned(),
-            type_params,
-        }))
-    }
-
-    pub fn analyze_any_ts_type_member(
-        &self,
-        node: &AnyTsTypeMember,
-    ) -> TResult<TsInterfaceProperty> {
-        let ty = match node {
-            AnyTsTypeMember::TsPropertySignatureTypeMember(m) => {
-                let name = match m.name().unwrap() {
-                    AnyJsObjectMemberName::JsLiteralMemberName(member) => {
-                        member.value().unwrap().text_trimmed().to_string()
-                    }
-                    _ => todo!("member name {:?}", m.name()),
-                };
-                let is_optional = m.optional_token().is_some();
-                let is_readonly = m.readonly_token().is_some();
-                if let Some(ann) = m.type_annotation() {
-                    let type_info = self.analyze_type_annotation(ann);
-                    TsInterfaceProperty {
-                        name: name.to_string(),
-                        type_info,
-                        is_optional,
-                        is_readonly,
-                    }
-                } else {
-                    todo!()
-                }
-            }
-            AnyTsTypeMember::TsMethodSignatureTypeMember(member) => {
-                let name = match member.name()? {
-                    AnyJsObjectMemberName::JsLiteralMemberName(literal) => {
-                        literal.value().unwrap().text_trimmed().to_string()
-                    }
-                    AnyJsObjectMemberName::JsComputedMemberName(js_computed_member_name) => todo!(),
-                    AnyJsObjectMemberName::JsMetavariable(js_metavariable) => todo!(),
-                };
-
-                let is_optional = member.optional_token().is_some();
-
-                let mut type_params = vec![];
-                if let Some(ty_params) = member.type_parameters() {
-                    for param in ty_params.items().into_iter().flatten() {
-                        let param = self.analyze_type_param(&param)?;
-                        type_params.push(param);
-                    }
-                };
-
-                let mut params = vec![];
-                if let Ok(parameter) = member.parameters() {
-                    for p in parameter.items().into_iter().flatten() {
-                        match p {
-                            AnyJsParameter::AnyJsFormalParameter(p) => {
-                                match p {
-                                    AnyJsFormalParameter::JsFormalParameter(p) => {
-                                        let name = p.binding()?;
-                                        let is_optional = p.question_mark_token().is_some();
-                                        let param_type = if let Some(ann) = p.type_annotation() {
-                                            self.analyze_type_annotation(ann)
-                                        } else {
-                                            TypeInfo::Unknown
-                                        };
-                                        params.push(FunctionParam {
-                                            name: name.to_string(),
-                                            is_optional,
-                                            param_type,
-                                        });
-                                    }
-                                    _ => todo!("{:?}", params),
-                                };
-                            }
-                            _ => todo!("{:?}", p),
-                        }
-                    }
-                }
-
-                let return_type = if let Some(ty) = member.return_type_annotation() {
-                    let ret_ty = ty.ty()?;
-                    match ret_ty {
-                        AnyTsReturnType::AnyTsType(ty) => {
-                            let ty = self.analyze_any_ts_types(&ty)?;
-                            Box::new(ty)
-                        }
-                        node => todo!("{:?}", node),
-                    }
-                } else {
-                    Box::new(TypeInfo::Unknown)
-                };
-
-                TsInterfaceProperty {
-                    name: name.to_string(),
-                    type_info: TypeInfo::Function(TsFunctionSignature {
-                        type_params,
-                        this_param: None,
-                        params,
-                        return_type,
-                        is_async: false,
-                    }),
-                    is_optional,
-                    is_readonly: false,
-                }
-            }
-            _ => todo!("{:?}", node),
-        };
-        Ok(ty)
-    }
-
-    pub fn analyze_any_js_expression(&self, node: &AnyJsExpression) -> TResult<TypeInfo> {
-        let ty = match node {
-            AnyJsExpression::AnyJsLiteralExpression(expr) => {
-                self.analyze_js_literal_expression(expr)?
-            }
-            AnyJsExpression::JsObjectExpression(node) => self.analyze_js_object_expression(node)?,
-            AnyJsExpression::JsArrowFunctionExpression(node) => {
-                self.analyze_js_arrow_function_expression(node)?
-            }
-            _ => todo!("{:?}", node),
-        };
-        Ok(ty)
-    }
-
-    pub fn analyze_js_arrow_function_expression(
-        &self,
-        node: &JsArrowFunctionExpression,
-    ) -> TResult<TypeInfo> {
-        let is_async = node.async_token().is_some();
-        let mut type_params = vec![];
-        if let Some(params) = node.type_parameters() {
-            for p in params.items().into_iter().flatten() {
-                let param = self.analyze_type_param(&p)?;
-                type_params.push(param);
-            }
-        };
-
-        let mut params = vec![];
-
-        if let Ok(parameters) = node.parameters() {
-            match parameters {
-                AnyJsArrowFunctionParameters::AnyJsBinding(node) => match node {
-                    AnyJsBinding::JsIdentifierBinding(bind) => {
-                        let name = bind.name_token().unwrap().text_trimmed().to_string();
-                        params.push(FunctionParam {
-                            name,
-                            is_optional: false,
-                            param_type: TypeInfo::Unknown,
-                        });
-                    }
-                    _ => todo!("{:?}", node),
-                },
-                AnyJsArrowFunctionParameters::JsParameters(param) => {
-                    for p in param.items().into_iter().flatten() {
-                        match p {
-                            AnyJsParameter::AnyJsFormalParameter(p) => {
-                                match p {
-                                    AnyJsFormalParameter::JsFormalParameter(p) => {
-                                        let name = p.binding()?;
-                                        let is_optional = p.question_mark_token().is_some();
-                                        let param_type = if let Some(ann) = p.type_annotation() {
-                                            self.analyze_type_annotation(ann)
-                                        } else {
-                                            TypeInfo::Unknown
-                                        };
-
-                                        params.push(FunctionParam {
-                                            name: name.to_string(),
-                                            is_optional,
-                                            param_type,
-                                        });
-                                    }
-                                    _ => todo!("{:?}", params),
-                                };
-                            }
-                            _ => todo!("{:?}", p),
-                        }
-                    }
-                }
-            }
-        }
-
-        let return_type = if let Some(ty) = node.return_type_annotation() {
-            let ty = ty.ty()?;
-            match ty {
-                AnyTsReturnType::AnyTsType(any_ts_type) => {
-                    let ty = self.analyze_any_ts_types(&any_ts_type)?;
-                    Box::new(ty)
-                }
-                node => todo!("{:?}", node),
-            }
-        } else {
-            Box::new(TypeInfo::Unknown)
-        };
-
-        Ok(TypeInfo::Function(TsFunctionSignature {
-            type_params,
-            this_param: None,
-            params,
-            return_type,
-            is_async,
-        }))
-    }
-
-    pub fn analyze_js_literal_expression(
-        &self,
-        node: &AnyJsLiteralExpression,
-    ) -> TResult<TypeInfo> {
-        let ty = match node {
-            AnyJsLiteralExpression::JsBooleanLiteralExpression(node) => {
-                let value = node.value_token()?;
-                match value.text() {
-                    "true" => TypeInfo::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::True)),
-                    "false" => TypeInfo::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::False)),
-                    _ => unreachable!(),
-                }
-            }
-            AnyJsLiteralExpression::JsNumberLiteralExpression(lit) => {
-                let value = lit.value_token()?;
-                TypeInfo::Literal(TsLiteralTypeKind::Number(value.text().parse().unwrap()))
-            }
-            AnyJsLiteralExpression::JsStringLiteralExpression(lit) => {
-                let value = lit.value_token()?.text().to_string().replace("\'", "");
-                TypeInfo::Literal(TsLiteralTypeKind::String(value))
-            }
-
-            AnyJsLiteralExpression::JsNullLiteralExpression(_) => {
-                TypeInfo::KeywordType(TsKeywordTypeKind::Null)
-            }
-            _ => todo!("{:?}", node),
-        };
-        Ok(ty)
-    }
-
-    pub fn analyze_js_object_expression(&self, node: &JsObjectExpression) -> TResult<TypeInfo> {
-        let mut properties = vec![];
-        for prop in node.members() {
-            let prop = prop?;
-            match prop {
-                AnyJsObjectMember::JsPropertyObjectMember(member) => {
-                    let key = member.name()?.name().unwrap().to_string();
-                    let value = member.value()?;
-                    let value_ty = self.analyze_any_js_expression(&value)?;
-                    properties.push(ObjectPropertyType {
-                        name: key,
-                        type_info: value_ty,
-                    });
-                }
-                _ => todo!(),
-            }
-        }
-        Ok(TypeInfo::Literal(TsLiteralTypeKind::Object(
-            ObjectLiteral { properties },
-        )))
-    }
-
-    pub fn analyze_type_param(&self, param: &TsTypeParameter) -> TResult<TypeParam> {
-        let name = param
-            .name()
-            .unwrap()
-            .ident_token()?
-            .text_trimmed()
-            .to_string();
-
-        let mut constraint = None;
-        let mut default = None;
-
-        if let Some(constraint_clause) = param.constraint() {
-            if let Ok(ty) = constraint_clause.ty() {
-                constraint = Some(self.analyze_any_ts_types(&ty)?);
-            }
-        }
-
-        if let Some(default_clause) = param.default() {
-            if let Ok(ty) = default_clause.ty() {
-                default = Some(self.analyze_any_ts_types(&ty)?);
-            }
-        }
-
-        Ok(TypeParam {
-            name,
-            constraint,
-            default,
-        })
-    }
 }
 
 impl Visitor for TypeAnalyzer {
@@ -628,7 +130,7 @@ impl Visitor for TypeAnalyzer {
         }
     }
 
-    fn visit_js_expression_statement(&mut self, node: &JsExpressionStatement) {}
+    fn visit_js_expression_statement(&mut self, _node: &JsExpressionStatement) {}
 
     fn visit_js_function_declaration(&mut self, node: &JsFunctionDeclaration) {
         if let Ok(ty) = self.analyze_js_function_declaration(node) {
@@ -646,51 +148,26 @@ impl Visitor for TypeAnalyzer {
     }
 
     fn visit_ts_declare_statement(&mut self, node: &TsDeclareStatement) {
-        node.declaration().map(|decl| match decl {
-            AnyJsDeclarationClause::JsVariableDeclarationClause(node) => {
-                self.visit_js_variable_declaration_clause(&node);
+        if let Ok(n) = node.declaration() {
+            match n {
+                AnyJsDeclarationClause::JsVariableDeclarationClause(node) => {
+                    self.visit_js_variable_declaration_clause(&node);
+                }
+                _ => todo!("{:?}", n),
             }
-            node => todo!("{:?}", node),
-        });
+        }
     }
 
     fn visit_ts_interface_declaration(&mut self, node: &TsInterfaceDeclaration) {
         let interface_name = match node.id().unwrap() {
             AnyTsIdentifierBinding::TsIdentifierBinding(bind) => {
-                bind.name_token().unwrap().text_trimmed().to_string()
+                let name_token = bind.name_token().unwrap();
+                name_token.text_trimmed().to_string()
             }
             _ => todo!(),
         };
-
-        let mut type_params = vec![];
-        if let Some(params) = node.type_parameters() {
-            for param in params.items().into_iter().flatten() {
-                if let Ok(param) = self.analyze_type_param(&param) {
-                    type_params.push(param);
-                }
-            }
-        }
-
-        let members = node.members();
-        let mut properties = vec![];
-        for m in members {
-            let ty = match self.analyze_any_ts_type_member(&m) {
-                Ok(ty) => ty,
-                Err(_) => continue,
-            };
-            properties.push(ty);
-        }
-
-        let ty = TsInterface {
-            name: interface_name.to_string(),
-            extends: vec![],
-            type_params,
-            properties,
-        };
-        let symbol = Symbol::new(
-            interface_name.to_string(),
-            type_info::TypeInfo::Interface(ty),
-        );
+        let ty = self.analyze_ts_interface_declaration(node).unwrap();
+        let symbol = Symbol::new(interface_name.to_string(), ty);
         self.insert_new_symbol(symbol);
     }
 
@@ -720,25 +197,8 @@ impl Visitor for TypeAnalyzer {
             },
             Err(_) => todo!(),
         };
-        let ann = node.variable_annotation();
-
-        if let Some(ann) = ann {
-            match ann {
-                AnyTsVariableAnnotation::TsDefiniteVariableAnnotation(node) => {
-                    todo!("definite assignment assertion {:?}", node)
-                }
-                AnyTsVariableAnnotation::TsTypeAnnotation(node) => {
-                    let ty = self.analyze_type_annotation(node);
-                    let symbol = Symbol::new(id.to_string(), ty);
-                    self.insert_new_symbol(symbol);
-                }
-            }
-        } else if let Some(init) = node.initializer() {
-            if let Ok(expr) = init.expression() {
-                let ty = self.analyze_expression(&expr);
-                let symbol = Symbol::new(id.to_string(), ty);
-                self.insert_new_symbol(symbol);
-            }
-        }
+        let ty = self.analyze_js_variable_declarator(node).unwrap();
+        let symbol = Symbol::new(id.to_string(), ty);
+        self.insert_new_symbol(symbol);
     }
 }
