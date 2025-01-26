@@ -149,6 +149,62 @@ impl TypeAnalyzer {
         Ok(ty)
     }
 
+    pub fn analyze_js_function_declaration(
+        &self,
+        node: &JsFunctionDeclaration,
+    ) -> TResult<TypeInfo> {
+        let is_async = node.async_token().is_some();
+
+        let mut params = vec![];
+
+        if let Ok(param) = node.parameters() {
+            for p in param.items().into_iter().flatten() {
+                match p {
+                    AnyJsParameter::AnyJsFormalParameter(p) => {
+                        match p {
+                            AnyJsFormalParameter::JsFormalParameter(p) => {
+                                let name = p.binding()?;
+                                let is_optional = p.question_mark_token().is_some();
+                                let param_type = if let Some(ann) = p.type_annotation() {
+                                    self.analyze_type_annotation(ann)
+                                } else {
+                                    TypeInfo::Unknown
+                                };
+
+                                params.push(FunctionParam {
+                                    name: name.to_string(),
+                                    is_optional,
+                                    param_type,
+                                });
+                            }
+                            _ => todo!("{:?}", params),
+                        };
+                    }
+                    _ => todo!("{:?}", p),
+                }
+            }
+        }
+
+        let return_type = if let Some(ret_ty) = node.return_type_annotation() {
+            let ty = ret_ty.ty()?;
+            match ty {
+                AnyTsReturnType::AnyTsType(ty) => self.analyze_any_ts_types(&ty)?,
+                _ => TypeInfo::Unknown,
+            }
+        } else {
+            TypeInfo::Unknown
+        };
+
+        Ok(TypeInfo::Function(TsFunctionSignature {
+            //todo
+            type_params: vec![],
+            this_param: None,
+            params,
+            return_type: Box::new(return_type),
+            is_async,
+        }))
+    }
+
     pub fn analyze_ts_function_type(&self, node: &TsFunctionType) -> TResult<TypeInfo> {
         let mut type_params = vec![];
         if let Some(params) = node.type_parameters() {
@@ -205,6 +261,7 @@ impl TypeAnalyzer {
             this_param: None,
             params,
             return_type,
+            is_async: false,
         }))
     }
 
@@ -334,6 +391,7 @@ impl TypeAnalyzer {
                         this_param: None,
                         params,
                         return_type,
+                        is_async: false,
                     }),
                     is_optional,
                     is_readonly: false,
@@ -362,6 +420,7 @@ impl TypeAnalyzer {
         &self,
         node: &JsArrowFunctionExpression,
     ) -> TResult<TypeInfo> {
+        let is_async = node.async_token().is_some();
         let mut type_params = vec![];
         if let Some(params) = node.type_parameters() {
             for p in params.items().into_iter().flatten() {
@@ -433,6 +492,7 @@ impl TypeAnalyzer {
             this_param: None,
             params,
             return_type,
+            is_async,
         }))
     }
 
@@ -561,11 +621,21 @@ impl Visitor for TypeAnalyzer {
             AnyJsStatement::JsExpressionStatement(node) => {
                 self.visit_js_expression_statement(node);
             }
+            AnyJsStatement::JsFunctionDeclaration(node) => {
+                self.visit_js_function_declaration(node);
+            }
             node => todo!("{:?}", node),
         }
     }
 
     fn visit_js_expression_statement(&mut self, node: &JsExpressionStatement) {}
+
+    fn visit_js_function_declaration(&mut self, node: &JsFunctionDeclaration) {
+        if let Ok(ty) = self.analyze_js_function_declaration(node) {
+            let symbol = Symbol::new(node.id().unwrap().to_string(), ty);
+            self.insert_new_symbol(symbol);
+        }
+    }
 
     fn visit_js_variable_statement(&mut self, node: &JsVariableStatement) {
         if let Ok(list) = node.declaration() {

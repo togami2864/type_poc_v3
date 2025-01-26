@@ -29,6 +29,20 @@ impl NoFloatingPromisesLinter {
                     if let Some(expr) = stmt.as_js_expression_statement() {
                         self.check_expression(&expr.expression().unwrap());
                     }
+
+                    if let Some(func_decl) = stmt.as_js_function_declaration() {
+                        self.check_function_declaration(func_decl);
+                    }
+                }
+            }
+        }
+    }
+
+    fn check_function_declaration(&mut self, func_decl: &JsFunctionDeclaration) {
+        if let Ok(body) = func_decl.body() {
+            for stmt in body.statements() {
+                if let Some(expr_stmt) = stmt.as_js_expression_statement() {
+                    self.check_expression(&expr_stmt.expression().unwrap());
                 }
             }
         }
@@ -82,13 +96,30 @@ impl NoFloatingPromisesLinter {
                     TypeInfo::Unknown
                 }
             }
+            AnyJsExpression::JsStaticMemberExpression(expr) => {
+                let object = expr.object().unwrap();
+                let name = object.to_string();
+                let member = expr.member().unwrap();
+                let method_name = member.text();
+                if let Some(symbol) = self.server.get_resolved_type_info(name) {
+                    symbol.ty.clone()
+                } else {
+                    TypeInfo::Unknown
+                }
+            }
             node => todo!("{}", node),
         }
     }
 
     fn check_expression(&mut self, expr: &AnyJsExpression) {
-        if let AnyJsExpression::JsCallExpression(call_expr) = expr {
-            self.check_call_expression(call_expr)
+        match expr {
+            AnyJsExpression::JsCallExpression(call_expr) => self.check_call_expression(call_expr),
+            AnyJsExpression::JsStaticMemberExpression(static_member) => {
+                if let Ok(object) = static_member.object() {
+                    self.check_expression(&object);
+                }
+            }
+            _ => {}
         }
     }
 

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use analyzer::TypeAnalyzer;
 use biome_js_parser::parse;
 use biome_js_syntax::JsFileSource;
-use type_info::{symbol::Symbol, TypeInfo};
+use type_info::symbol::Symbol;
 use visitor::Visitor;
 
 #[derive(Debug)]

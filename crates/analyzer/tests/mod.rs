@@ -312,6 +312,7 @@ const h = false;
                                 )),
                                 type_params: vec![],
                                 this_param: None,
+                                is_async: false,
                             }),
                             is_optional: false,
                             is_readonly: false,
@@ -340,6 +341,7 @@ const h = false;
                                 )),
                                 type_params: vec![],
                                 this_param: None,
+                                is_async: false,
                             }),
                             is_optional: false,
                             is_readonly: false,
@@ -353,6 +355,7 @@ const h = false;
                                 )),
                                 type_params: vec![],
                                 this_param: None,
+                                is_async: false
                             }),
                             is_optional: true,
                             is_readonly: false,
@@ -379,6 +382,7 @@ const h = false;
                                 }],
 
                                 this_param: None,
+                                is_async: false,
                             }),
                             is_optional: false,
                             is_readonly: false,
@@ -398,6 +402,7 @@ const h = false;
                                 ])),
                                 type_params: vec![],
                                 this_param: None,
+                                is_async: false
                             }),
                             is_optional: false,
                             is_readonly: false,
@@ -647,6 +652,7 @@ const h = false;
                     return_type: Box::new(TypeInfo::KeywordType(TsKeywordTypeKind::Void)),
                     type_params: vec![],
                     this_param: None,
+                    is_async: false,
                 })
             )
         );
@@ -671,6 +677,7 @@ const h = false;
                     return_type: Box::new(TypeInfo::KeywordType(TsKeywordTypeKind::Boolean)),
                     type_params: vec![],
                     this_param: None,
+                    is_async: false,
                 })
             )
         );
@@ -688,6 +695,7 @@ const h = false;
                     return_type: Box::new(TypeInfo::KeywordType(TsKeywordTypeKind::String)),
                     type_params: vec![],
                     this_param: None,
+                    is_async: false,
                 })
             )
         );
@@ -715,6 +723,7 @@ const h = false;
                         default: None
                     }],
                     this_param: None,
+                    is_async: false,
                 })
             )
         );
@@ -738,6 +747,37 @@ const h = false;
                     })),
                     type_params: vec![],
                     this_param: None,
+                    is_async: false,
+                })
+            )
+        );
+    }
+
+    #[test]
+    fn test_function_declaration() {
+        let src = r#"async function test(): Promise<void> {
+  Promise.resolve("value");
+}
+"#;
+
+        let analyzer = test_analyzer(src, JsFileSource::ts());
+
+        analyzer.print_symbol_table();
+
+        let symbol = analyzer.get_symbol("test").unwrap();
+        assert_eq!(
+            symbol,
+            &Symbol::new(
+                "test".to_string(),
+                TypeInfo::Function(TsFunctionSignature {
+                    params: vec![],
+                    return_type: Box::new(TypeInfo::TypeRef(TsTypeRef {
+                        name: "Promise".to_string(),
+                        type_params: vec![TypeInfo::KeywordType(TsKeywordTypeKind::Void)]
+                    })),
+                    type_params: vec![],
+                    this_param: None,
+                    is_async: true,
                 })
             )
         );

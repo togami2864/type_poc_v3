@@ -62,6 +62,7 @@ pub struct TsFunctionSignature {
     pub this_param: Option<Box<TypeInfo>>,
     pub params: Vec<FunctionParam>,
     pub return_type: Box<TypeInfo>,
+    pub is_async: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
