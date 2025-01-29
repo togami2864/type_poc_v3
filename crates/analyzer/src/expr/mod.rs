@@ -23,6 +23,7 @@ impl TypeAnalyzer {
             AnyJsExpression::JsArrowFunctionExpression(node) => {
                 self.analyze_js_arrow_function_expression(node)?
             }
+            AnyJsExpression::JsFunctionExpression(node) => TypeInfo::Unknown,
             _ => todo!("{:?}", node),
         };
         Ok(ty)

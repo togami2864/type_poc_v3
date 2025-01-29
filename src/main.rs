@@ -13,6 +13,7 @@ fn main() {
     let tests_dir = current_dir.join("src/tests");
     let paths = get_ts_files(&tests_dir);
     server.analyze(paths.clone());
+    server.print_symbol_table();
 
     let mut linter = NoFloatingPromisesLinter::new(server);
 

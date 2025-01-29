@@ -2,8 +2,9 @@ use std::path::PathBuf;
 
 use analyzer::TypeAnalyzer;
 use biome_js_parser::parse;
-use biome_js_syntax::JsFileSource;
-use type_info::symbol::Symbol;
+use biome_js_syntax::{JsFileSource, JsSyntaxKind, JsSyntaxNode};
+use biome_rowan::SyntaxKind;
+use type_info::{symbol::Symbol, TypeInfo};
 use visitor::Visitor;
 
 #[derive(Debug)]
@@ -31,6 +32,10 @@ impl Server {
         }
     }
 
+    pub fn print_symbol_table(&self) {
+        self.analyzer.print_symbol_table();
+    }
+
     pub fn get_resolved_type_info(&self, symbol_name: String) -> Option<&Symbol> {
         if let Some(local) = self.analyzer.get_symbol(&symbol_name) {
             Some(local)
@@ -38,6 +43,19 @@ impl Server {
             Some(global)
         } else {
             None
+        }
+    }
+
+    pub fn get_type_info_from_builtin(&self, node: &JsSyntaxNode) -> TypeInfo {
+        if matches!(node.kind(), JsSyntaxKind::JS_REFERENCE_IDENTIFIER) {
+            let symbol_name = node.text_trimmed().to_string();
+            if let Some(ty) = self.analyzer.get_global_symbol(&symbol_name) {
+                ty.ty.clone()
+            } else {
+                TypeInfo::Unknown
+            }
+        } else {
+            TypeInfo::Unknown
         }
     }
 }

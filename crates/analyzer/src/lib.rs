@@ -153,6 +153,12 @@ impl Visitor for TypeAnalyzer {
                 AnyJsDeclarationClause::JsVariableDeclarationClause(node) => {
                     self.visit_js_variable_declaration_clause(&node);
                 }
+                AnyJsDeclarationClause::TsDeclareFunctionDeclaration(node) => {
+                    if let Ok(ty) = self.analyze_ts_declare_function_declaration(&node) {
+                        let symbol = Symbol::new(node.id().unwrap().to_string(), ty);
+                        self.insert_new_symbol(symbol);
+                    }
+                }
                 _ => todo!("{:?}", n),
             }
         }
