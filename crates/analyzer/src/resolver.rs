@@ -6,9 +6,9 @@ use type_info::{symbol::Symbol, *};
 use crate::TypeAnalyzer;
 
 impl TypeAnalyzer {
-    pub fn resolve_type_info(&self, symbol: &Symbol, path: &PathBuf) -> TypeInfo {
+    pub fn resolve_type_info(&self, symbol: &Symbol, path: &PathBuf) -> Type {
         match &symbol.ty {
-            TypeInfo::Interface(interface) => {
+            Type::Interface(interface) => {
                 let mut resolved_interface = interface.clone();
 
                 for type_param in &mut resolved_interface.type_params {
@@ -31,9 +31,9 @@ impl TypeAnalyzer {
                     .map(|ext| self.resolve_type_info_inner(ext, path))
                     .collect();
 
-                TypeInfo::Interface(resolved_interface)
+                Type::Interface(resolved_interface)
             }
-            TypeInfo::Function(func) => {
+            Type::Function(func) => {
                 let mut resolved_func = func.clone();
                 resolved_func.params = resolved_func
                     .params
@@ -48,20 +48,20 @@ impl TypeAnalyzer {
                 resolved_func.return_type =
                     Box::new(self.resolve_type_info_inner(&func.return_type, path));
 
-                TypeInfo::Function(resolved_func)
+                Type::Function(resolved_func)
             }
             _ => symbol.ty.clone(),
         }
     }
 
-    fn resolve_type_info_inner(&self, ty: &TypeInfo, path: &PathBuf) -> TypeInfo {
+    fn resolve_type_info_inner(&self, ty: &Type, path: &PathBuf) -> Type {
         match ty {
-            TypeInfo::TypeRef(type_ref) => {
+            Type::TypeRef(type_ref) => {
                 if let Some(symbol) = self.symbol_table.get(path, &type_ref.name) {
                     let ty = self.apply_type_arguments(&symbol.ty, &type_ref.type_params);
                     return ty;
                 }
-                if let Some(referred_symbol) = self.global_symbol_table.get(&type_ref.name) {
+                if let Some(referred_symbol) = self.builtin_symbol_table.get(&type_ref.name) {
                     let mut resolved_type = self.resolve_type_info(referred_symbol, path);
 
                     if !type_ref.type_params.is_empty() {
@@ -71,22 +71,22 @@ impl TypeAnalyzer {
 
                     resolved_type
                 } else {
-                    TypeInfo::Unknown
+                    Type::Unknown
                 }
             }
-            TypeInfo::Union(types) => TypeInfo::Union(
+            Type::Union(types) => Type::Union(
                 types
                     .iter()
                     .map(|t| self.resolve_type_info_inner(t, path))
                     .collect(),
             ),
-            TypeInfo::Intersection(types) => TypeInfo::Intersection(
+            Type::Intersection(types) => Type::Intersection(
                 types
                     .iter()
                     .map(|t| self.resolve_type_info_inner(t, path))
                     .collect(),
             ),
-            TypeInfo::Function(func) => {
+            Type::Function(func) => {
                 let mut resolved_func = func.clone();
                 resolved_func.params = resolved_func
                     .params
@@ -99,17 +99,17 @@ impl TypeAnalyzer {
                     .collect();
                 resolved_func.return_type =
                     Box::new(self.resolve_type_info_inner(&func.return_type, path));
-                TypeInfo::Function(resolved_func)
+                Type::Function(resolved_func)
             }
             _ => ty.clone(),
         }
     }
 
-    fn apply_type_arguments(&self, base_type: &TypeInfo, type_args: &[TypeInfo]) -> TypeInfo {
+    fn apply_type_arguments(&self, base_type: &Type, type_args: &[Type]) -> Type {
         match base_type {
-            TypeInfo::Interface(interface) => {
+            Type::Interface(interface) => {
                 if interface.type_params.len() != type_args.len() {
-                    return TypeInfo::Unknown;
+                    return Type::Unknown;
                 }
 
                 let mut type_map = FxHashMap::default();
@@ -129,7 +129,7 @@ impl TypeAnalyzer {
                         }
                     })
                     .collect();
-                TypeInfo::Interface(TsInterface {
+                Type::Interface(TsInterface {
                     name: interface.name.clone(),
                     extends: interface.extends.clone(),
                     properties: resolved_properties,
@@ -141,9 +141,9 @@ impl TypeAnalyzer {
     }
 }
 
-pub fn substitute_type(ty: &TypeInfo, type_map: &FxHashMap<String, TypeInfo>) -> TypeInfo {
+pub fn substitute_type(ty: &Type, type_map: &FxHashMap<String, Type>) -> Type {
     match ty {
-        TypeInfo::TypeRef(ref_type) => {
+        Type::TypeRef(ref_type) => {
             if let Some(ty) = type_map.get(&ref_type.name) {
                 return ty.clone();
             }
@@ -153,7 +153,7 @@ pub fn substitute_type(ty: &TypeInfo, type_map: &FxHashMap<String, TypeInfo>) ->
                     let ty = substitute_type(r, type_map);
                     resolved_type.push(ty);
                 }
-                TypeInfo::TypeRef(TsTypeRef {
+                Type::TypeRef(TsTypeRef {
                     name: ref_type.name.clone(),
                     type_params: resolved_type,
                 })
@@ -161,11 +161,11 @@ pub fn substitute_type(ty: &TypeInfo, type_map: &FxHashMap<String, TypeInfo>) ->
                 ty.clone()
             }
         }
-        TypeInfo::Union(types) => {
+        Type::Union(types) => {
             let resolved_types = types.iter().map(|t| substitute_type(t, type_map)).collect();
-            TypeInfo::Union(resolved_types)
+            Type::Union(resolved_types)
         }
-        TypeInfo::Function(func) => {
+        Type::Function(func) => {
             let mut resolved_func = func.clone();
             resolved_func.params = resolved_func
                 .params
@@ -177,7 +177,7 @@ pub fn substitute_type(ty: &TypeInfo, type_map: &FxHashMap<String, TypeInfo>) ->
                 })
                 .collect();
             resolved_func.return_type = Box::new(substitute_type(&func.return_type, type_map));
-            TypeInfo::Function(resolved_func)
+            Type::Function(resolved_func)
         }
         _ => ty.clone(),
     }

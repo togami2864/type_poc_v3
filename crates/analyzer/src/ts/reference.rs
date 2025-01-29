@@ -1,10 +1,10 @@
 use biome_js_syntax::{AnyTsName, TsReferenceType};
-use type_info::{TsTypeRef, TypeInfo};
+use type_info::{TsTypeRef, Type};
 
 use crate::{TResult, TypeAnalyzer};
 
 impl TypeAnalyzer {
-    pub fn analyze_ts_type_ref(&self, node: &TsReferenceType) -> TResult<TypeInfo> {
+    pub fn analyze_ts_type_ref(&self, node: &TsReferenceType) -> TResult<Type> {
         let name = match node.name()? {
             AnyTsName::JsReferenceIdentifier(ident) => {
                 let value = ident.value_token()?;
@@ -26,7 +26,7 @@ impl TypeAnalyzer {
                 }
             }
         }
-        Ok(TypeInfo::TypeRef(TsTypeRef {
+        Ok(Type::TypeRef(TsTypeRef {
             name: name.to_owned(),
             type_params,
         }))

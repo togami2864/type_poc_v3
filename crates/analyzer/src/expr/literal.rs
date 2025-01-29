@@ -1,6 +1,6 @@
 use biome_js_syntax::{AnyJsLiteralExpression, AnyJsObjectMember, JsObjectExpression};
 use type_info::{
-    BoolLiteral, ObjectLiteral, ObjectPropertyType, TsKeywordTypeKind, TsLiteralTypeKind, TypeInfo,
+    BoolLiteral, ObjectLiteral, ObjectPropertyType, TsKeywordTypeKind, TsLiteralTypeKind, Type,
 };
 
 use crate::{TResult, TypeAnalyzer};
@@ -9,34 +9,34 @@ impl TypeAnalyzer {
     pub fn analyze_js_literal_expression(
         &self,
         node: &AnyJsLiteralExpression,
-    ) -> TResult<TypeInfo> {
+    ) -> TResult<Type> {
         let ty = match node {
             AnyJsLiteralExpression::JsBooleanLiteralExpression(node) => {
                 let value = node.value_token()?;
                 match value.text() {
-                    "true" => TypeInfo::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::True)),
-                    "false" => TypeInfo::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::False)),
+                    "true" => Type::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::True)),
+                    "false" => Type::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::False)),
                     _ => unreachable!(),
                 }
             }
             AnyJsLiteralExpression::JsNumberLiteralExpression(lit) => {
                 let value = lit.value_token()?;
-                TypeInfo::Literal(TsLiteralTypeKind::Number(value.text().parse().unwrap()))
+                Type::Literal(TsLiteralTypeKind::Number(value.text().parse().unwrap()))
             }
             AnyJsLiteralExpression::JsStringLiteralExpression(lit) => {
                 let value = lit.value_token()?.text().to_string().replace("\'", "");
-                TypeInfo::Literal(TsLiteralTypeKind::String(value))
+                Type::Literal(TsLiteralTypeKind::String(value))
             }
 
             AnyJsLiteralExpression::JsNullLiteralExpression(_) => {
-                TypeInfo::KeywordType(TsKeywordTypeKind::Null)
+                Type::KeywordType(TsKeywordTypeKind::Null)
             }
             _ => todo!("{:?}", node),
         };
         Ok(ty)
     }
 
-    pub fn analyze_js_object_expression(&self, node: &JsObjectExpression) -> TResult<TypeInfo> {
+    pub fn analyze_js_object_expression(&self, node: &JsObjectExpression) -> TResult<Type> {
         let mut properties = vec![];
         for prop in node.members() {
             let prop = prop?;
@@ -53,7 +53,7 @@ impl TypeAnalyzer {
                 _ => todo!(),
             }
         }
-        Ok(TypeInfo::Literal(TsLiteralTypeKind::Object(
+        Ok(Type::Literal(TsLiteralTypeKind::Object(
             ObjectLiteral { properties },
         )))
     }

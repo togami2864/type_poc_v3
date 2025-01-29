@@ -1,7 +1,7 @@
 use biome_js_syntax::{
     AnyJsFormalParameter, AnyJsParameter, AnyTsReturnType, JsFunctionDeclaration, JsParameters,
 };
-use type_info::{FunctionParam, TsFunctionSignature, TypeInfo};
+use type_info::{FunctionParam, TsFunctionSignature, Type};
 
 use crate::{TResult, TypeAnalyzer};
 
@@ -11,7 +11,7 @@ impl TypeAnalyzer {
     pub fn analyze_js_function_declaration(
         &self,
         node: &JsFunctionDeclaration,
-    ) -> TResult<TypeInfo> {
+    ) -> TResult<Type> {
         let is_async = node.async_token().is_some();
 
         let mut params = vec![];
@@ -24,13 +24,13 @@ impl TypeAnalyzer {
             let ty = ret_ty.ty()?;
             match ty {
                 AnyTsReturnType::AnyTsType(ty) => self.analyze_any_ts_types(&ty)?,
-                _ => TypeInfo::Unknown,
+                _ => Type::Unknown,
             }
         } else {
-            TypeInfo::Unknown
+            Type::Unknown
         };
 
-        Ok(TypeInfo::Function(TsFunctionSignature {
+        Ok(Type::Function(TsFunctionSignature {
             //todo
             type_params: vec![],
             this_param: None,
@@ -52,7 +52,7 @@ impl TypeAnalyzer {
                             let param_type = if let Some(ann) = p.type_annotation() {
                                 self.analyze_type_annotation(ann)
                             } else {
-                                TypeInfo::Unknown
+                                Type::Unknown
                             };
 
                             result.push(FunctionParam {

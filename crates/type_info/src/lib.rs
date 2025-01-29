@@ -1,10 +1,10 @@
 pub mod symbol;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TypeInfo {
+pub enum Type {
     KeywordType(TsKeywordTypeKind),
-    Union(Vec<TypeInfo>),
-    Intersection(Vec<TypeInfo>),
+    Union(Vec<Type>),
+    Intersection(Vec<Type>),
     Function(TsFunctionSignature),
     Alias(TsTypeAlias),
     Interface(TsInterface),
@@ -53,29 +53,29 @@ pub struct ObjectLiteral {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObjectPropertyType {
     pub name: String,
-    pub type_info: TypeInfo,
+    pub type_info: Type,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TsFunctionSignature {
     pub type_params: Vec<TypeParam>,
-    pub this_param: Option<Box<TypeInfo>>,
+    pub this_param: Option<Box<Type>>,
     pub params: Vec<FunctionParam>,
-    pub return_type: Box<TypeInfo>,
+    pub return_type: Box<Type>,
     pub is_async: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionParam {
     pub name: String,
-    pub param_type: TypeInfo,
+    pub param_type: Type,
     pub is_optional: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TsInterface {
     pub name: String,
-    pub extends: Vec<TypeInfo>,
+    pub extends: Vec<Type>,
     pub properties: Vec<TsInterfaceProperty>,
     pub type_params: Vec<TypeParam>,
 }
@@ -83,7 +83,7 @@ pub struct TsInterface {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TsInterfaceProperty {
     pub name: String,
-    pub type_info: TypeInfo,
+    pub type_info: Type,
     pub is_optional: bool,
     pub is_readonly: bool,
 }
@@ -92,18 +92,18 @@ pub struct TsInterfaceProperty {
 pub struct TsTypeAlias {
     pub name: String,
     pub type_params: Vec<TypeParam>,
-    pub aliased_type: Box<TypeInfo>,
+    pub aliased_type: Box<Type>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TsTypeRef {
     pub name: String,
-    pub type_params: Vec<TypeInfo>,
+    pub type_params: Vec<Type>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeParam {
     pub name: String,
-    pub constraint: Option<TypeInfo>,
-    pub default: Option<TypeInfo>,
+    pub constraint: Option<Type>,
+    pub default: Option<Type>,
 }

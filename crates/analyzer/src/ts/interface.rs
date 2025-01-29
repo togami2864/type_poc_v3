@@ -1,13 +1,10 @@
 use biome_js_syntax::{AnyTsIdentifierBinding, TsInterfaceDeclaration};
-use type_info::{TsInterface, TypeInfo};
+use type_info::{TsInterface, Type};
 
 use crate::{TResult, TypeAnalyzer};
 
 impl TypeAnalyzer {
-    pub fn analyze_ts_interface_declaration(
-        &self,
-        node: &TsInterfaceDeclaration,
-    ) -> TResult<TypeInfo> {
+    pub fn analyze_ts_interface_declaration(&self, node: &TsInterfaceDeclaration) -> TResult<Type> {
         let name = match node.id().unwrap() {
             AnyTsIdentifierBinding::TsIdentifierBinding(bind) => {
                 bind.name_token().unwrap().text_trimmed().to_string()
@@ -34,7 +31,7 @@ impl TypeAnalyzer {
             properties.push(ty);
         }
 
-        Ok(TypeInfo::Interface(TsInterface {
+        Ok(Type::Interface(TsInterface {
             name: name.to_string(),
             extends: vec![],
             type_params,

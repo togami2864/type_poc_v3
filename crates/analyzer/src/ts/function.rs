@@ -1,10 +1,10 @@
 use biome_js_syntax::{AnyTsReturnType, TsDeclareFunctionDeclaration, TsFunctionType};
-use type_info::{TsFunctionSignature, TypeInfo};
+use type_info::{TsFunctionSignature, Type};
 
 use crate::{TResult, TypeAnalyzer};
 
 impl TypeAnalyzer {
-    pub fn analyze_ts_function_type(&self, node: &TsFunctionType) -> TResult<TypeInfo> {
+    pub fn analyze_ts_function_type(&self, node: &TsFunctionType) -> TResult<Type> {
         let mut type_params = vec![];
         if let Some(params) = node.type_parameters() {
             for p in params.items().into_iter().flatten() {
@@ -28,10 +28,10 @@ impl TypeAnalyzer {
                 node => todo!("{:?}", node),
             }
         } else {
-            Box::new(TypeInfo::Unknown)
+            Box::new(Type::Unknown)
         };
 
-        Ok(TypeInfo::Function(TsFunctionSignature {
+        Ok(Type::Function(TsFunctionSignature {
             type_params,
             this_param: None,
             params,
@@ -43,7 +43,7 @@ impl TypeAnalyzer {
     pub fn analyze_ts_declare_function_declaration(
         &self,
         node: &TsDeclareFunctionDeclaration,
-    ) -> TResult<TypeInfo> {
+    ) -> TResult<Type> {
         let mut type_params = vec![];
         if let Some(params) = node.type_parameters() {
             for p in params.items().into_iter().flatten() {
@@ -67,10 +67,10 @@ impl TypeAnalyzer {
                 node => todo!("{:?}", node),
             }
         } else {
-            Box::new(TypeInfo::Unknown)
+            Box::new(Type::Unknown)
         };
 
-        Ok(TypeInfo::Function(TsFunctionSignature {
+        Ok(Type::Function(TsFunctionSignature {
             type_params,
             this_param: None,
             params,

@@ -1,7 +1,7 @@
 use biome_js_syntax::{
     AnyJsArrowFunctionParameters, AnyJsBinding, AnyTsReturnType, JsArrowFunctionExpression,
 };
-use type_info::{FunctionParam, TsFunctionSignature, TypeInfo};
+use type_info::{FunctionParam, TsFunctionSignature, Type};
 
 use crate::{TResult, TypeAnalyzer};
 
@@ -9,7 +9,7 @@ impl TypeAnalyzer {
     pub fn analyze_js_arrow_function_expression(
         &self,
         node: &JsArrowFunctionExpression,
-    ) -> TResult<TypeInfo> {
+    ) -> TResult<Type> {
         let is_async = node.async_token().is_some();
         let mut type_params = vec![];
         if let Some(params) = node.type_parameters() {
@@ -29,7 +29,7 @@ impl TypeAnalyzer {
                         params.push(FunctionParam {
                             name,
                             is_optional: false,
-                            param_type: TypeInfo::Unknown,
+                            param_type: Type::Unknown,
                         });
                     }
                     _ => todo!("{:?}", node),
@@ -50,10 +50,10 @@ impl TypeAnalyzer {
                 node => todo!("{:?}", node),
             }
         } else {
-            Box::new(TypeInfo::Unknown)
+            Box::new(Type::Unknown)
         };
 
-        Ok(TypeInfo::Function(TsFunctionSignature {
+        Ok(Type::Function(TsFunctionSignature {
             type_params,
             this_param: None,
             params,

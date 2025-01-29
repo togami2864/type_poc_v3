@@ -1,5 +1,5 @@
 use biome_js_syntax::{AnyJsObjectMemberName, AnyTsReturnType, AnyTsTypeMember};
-use type_info::{TsFunctionSignature, TsInterfaceProperty, TypeInfo};
+use type_info::{TsFunctionSignature, TsInterfaceProperty, Type};
 
 use crate::{TResult, TypeAnalyzer};
 
@@ -63,12 +63,12 @@ impl TypeAnalyzer {
                         node => todo!("{:?}", node),
                     }
                 } else {
-                    Box::new(TypeInfo::Unknown)
+                    Box::new(Type::Unknown)
                 };
 
                 TsInterfaceProperty {
                     name: name.to_string(),
-                    type_info: TypeInfo::Function(TsFunctionSignature {
+                    type_info: Type::Function(TsFunctionSignature {
                         type_params,
                         this_param: None,
                         params,

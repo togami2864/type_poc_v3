@@ -6,7 +6,7 @@ mod tests {
     use biome_js_parser::parse;
     use biome_js_syntax::JsFileSource;
     use symbol::Symbol;
-    use type_info::TypeInfo;
+    use type_info::Type;
     use type_info::*;
     use visitor::Visitor;
 
@@ -40,7 +40,7 @@ declare const j: any;
             analyzer.get_symbol("a").unwrap(),
             &Symbol::new(
                 "a".to_string(),
-                TypeInfo::KeywordType(TsKeywordTypeKind::Number)
+                Type::KeywordType(TsKeywordTypeKind::Number)
             )
         );
 
@@ -48,7 +48,7 @@ declare const j: any;
             analyzer.get_symbol("b").unwrap(),
             &Symbol::new(
                 "b".to_string(),
-                TypeInfo::KeywordType(TsKeywordTypeKind::String)
+                Type::KeywordType(TsKeywordTypeKind::String)
             )
         );
 
@@ -56,7 +56,7 @@ declare const j: any;
             analyzer.get_symbol("c").unwrap(),
             &Symbol::new(
                 "c".to_string(),
-                TypeInfo::KeywordType(TsKeywordTypeKind::Boolean)
+                Type::KeywordType(TsKeywordTypeKind::Boolean)
             )
         );
 
@@ -64,7 +64,7 @@ declare const j: any;
             analyzer.get_symbol("d").unwrap(),
             &Symbol::new(
                 "d".to_string(),
-                TypeInfo::KeywordType(TsKeywordTypeKind::BigInt)
+                Type::KeywordType(TsKeywordTypeKind::BigInt)
             )
         );
 
@@ -72,7 +72,7 @@ declare const j: any;
             analyzer.get_symbol("e").unwrap(),
             &Symbol::new(
                 "e".to_string(),
-                TypeInfo::KeywordType(TsKeywordTypeKind::Symbol)
+                Type::KeywordType(TsKeywordTypeKind::Symbol)
             )
         );
 
@@ -80,7 +80,7 @@ declare const j: any;
             analyzer.get_symbol("f").unwrap(),
             &Symbol::new(
                 "f".to_string(),
-                TypeInfo::KeywordType(TsKeywordTypeKind::Null)
+                Type::KeywordType(TsKeywordTypeKind::Null)
             )
         );
 
@@ -88,7 +88,7 @@ declare const j: any;
             analyzer.get_symbol("g").unwrap(),
             &Symbol::new(
                 "g".to_string(),
-                TypeInfo::KeywordType(TsKeywordTypeKind::Undefined)
+                Type::KeywordType(TsKeywordTypeKind::Undefined)
             )
         );
 
@@ -96,7 +96,7 @@ declare const j: any;
             analyzer.get_symbol("h").unwrap(),
             &Symbol::new(
                 "h".to_string(),
-                TypeInfo::KeywordType(TsKeywordTypeKind::Never)
+                Type::KeywordType(TsKeywordTypeKind::Never)
             )
         );
 
@@ -104,7 +104,7 @@ declare const j: any;
             analyzer.get_symbol("i").unwrap(),
             &Symbol::new(
                 "i".to_string(),
-                TypeInfo::KeywordType(TsKeywordTypeKind::Void)
+                Type::KeywordType(TsKeywordTypeKind::Void)
             )
         );
 
@@ -112,7 +112,7 @@ declare const j: any;
             analyzer.get_symbol("j").unwrap(),
             &Symbol::new(
                 "j".to_string(),
-                TypeInfo::KeywordType(TsKeywordTypeKind::Any)
+                Type::KeywordType(TsKeywordTypeKind::Any)
             )
         );
     }
@@ -133,21 +133,21 @@ declare const j: any;
             analyzer.get_symbol("obj").unwrap(),
             &Symbol::new(
                 "obj".to_string(),
-                TypeInfo::Literal(TsLiteralTypeKind::Object(ObjectLiteral {
+                Type::Literal(TsLiteralTypeKind::Object(ObjectLiteral {
                     properties: vec![
                         ObjectPropertyType {
                             name: "num".to_string(),
-                            type_info: TypeInfo::Literal(TsLiteralTypeKind::Number(42))
+                            type_info: Type::Literal(TsLiteralTypeKind::Number(42))
                         },
                         ObjectPropertyType {
                             name: "str".to_string(),
-                            type_info: TypeInfo::Literal(TsLiteralTypeKind::String(
+                            type_info: Type::Literal(TsLiteralTypeKind::String(
                                 "hello".to_string()
                             ))
                         },
                         ObjectPropertyType {
                             name: "bool".to_string(),
-                            type_info: TypeInfo::Literal(TsLiteralTypeKind::Boolean(
+                            type_info: Type::Literal(TsLiteralTypeKind::Boolean(
                                 BoolLiteral::True
                             ))
                         }
@@ -174,7 +174,7 @@ const h = false;
             analyzer.get_symbol("a").unwrap(),
             &Symbol::new(
                 "a".to_string(),
-                TypeInfo::Literal(TsLiteralTypeKind::Number(1))
+                Type::Literal(TsLiteralTypeKind::Number(1))
             )
         );
 
@@ -182,7 +182,7 @@ const h = false;
             analyzer.get_symbol("b").unwrap(),
             &Symbol::new(
                 "b".to_string(),
-                TypeInfo::Literal(TsLiteralTypeKind::String("'hello'".to_string()))
+                Type::Literal(TsLiteralTypeKind::String("'hello'".to_string()))
             )
         );
 
@@ -190,7 +190,7 @@ const h = false;
             analyzer.get_symbol("c").unwrap(),
             &Symbol::new(
                 "c".to_string(),
-                TypeInfo::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::True))
+                Type::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::True))
             )
         );
 
@@ -198,7 +198,7 @@ const h = false;
             analyzer.get_symbol("d").unwrap(),
             &Symbol::new(
                 "d".to_string(),
-                TypeInfo::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::False))
+                Type::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::False))
             )
         );
 
@@ -206,7 +206,7 @@ const h = false;
             analyzer.get_symbol("e").unwrap(),
             &Symbol::new(
                 "e".to_string(),
-                TypeInfo::Literal(TsLiteralTypeKind::Number(1))
+                Type::Literal(TsLiteralTypeKind::Number(1))
             )
         );
 
@@ -214,7 +214,7 @@ const h = false;
             analyzer.get_symbol("f").unwrap(),
             &Symbol::new(
                 "f".to_string(),
-                TypeInfo::Literal(TsLiteralTypeKind::String("hello".to_string()))
+                Type::Literal(TsLiteralTypeKind::String("hello".to_string()))
             )
         );
 
@@ -222,7 +222,7 @@ const h = false;
             analyzer.get_symbol("g").unwrap(),
             &Symbol::new(
                 "g".to_string(),
-                TypeInfo::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::True))
+                Type::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::True))
             )
         );
 
@@ -230,7 +230,7 @@ const h = false;
             analyzer.get_symbol("h").unwrap(),
             &Symbol::new(
                 "h".to_string(),
-                TypeInfo::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::False))
+                Type::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::False))
             )
         );
     }
@@ -260,32 +260,32 @@ const h = false;
             analyzer.get_symbol("Person").unwrap(),
             &Symbol::new(
                 "Person".to_string(),
-                TypeInfo::Interface(TsInterface {
+                Type::Interface(TsInterface {
                     name: "Person".to_string(),
                     extends: vec![],
                     type_params: vec![],
                     properties: vec![
                         TsInterfaceProperty {
                             name: "name".to_string(),
-                            type_info: TypeInfo::KeywordType(TsKeywordTypeKind::String),
+                            type_info: Type::KeywordType(TsKeywordTypeKind::String),
                             is_optional: false,
                             is_readonly: false,
                         },
                         TsInterfaceProperty {
                             name: "age".to_string(),
-                            type_info: TypeInfo::KeywordType(TsKeywordTypeKind::Number),
+                            type_info: Type::KeywordType(TsKeywordTypeKind::Number),
                             is_optional: false,
                             is_readonly: false,
                         },
                         TsInterfaceProperty {
                             name: "foo".to_string(),
-                            type_info: TypeInfo::KeywordType(TsKeywordTypeKind::String),
+                            type_info: Type::KeywordType(TsKeywordTypeKind::String),
                             is_optional: true,
                             is_readonly: false,
                         },
                         TsInterfaceProperty {
                             name: "bar".to_string(),
-                            type_info: TypeInfo::KeywordType(TsKeywordTypeKind::Boolean),
+                            type_info: Type::KeywordType(TsKeywordTypeKind::Boolean),
                             is_optional: false,
                             is_readonly: true,
                         }
@@ -298,16 +298,16 @@ const h = false;
             analyzer.get_symbol("MethodSignature").unwrap(),
             &Symbol::new(
                 "MethodSignature".to_string(),
-                TypeInfo::Interface(TsInterface {
+                Type::Interface(TsInterface {
                     name: "MethodSignature".to_string(),
                     extends: vec![],
                     type_params: vec![],
                     properties: vec![
                         TsInterfaceProperty {
                             name: "basic".to_string(),
-                            type_info: TypeInfo::Function(TsFunctionSignature {
+                            type_info: Type::Function(TsFunctionSignature {
                                 params: vec![],
-                                return_type: Box::new(TypeInfo::KeywordType(
+                                return_type: Box::new(Type::KeywordType(
                                     TsKeywordTypeKind::Void
                                 )),
                                 type_params: vec![],
@@ -319,24 +319,24 @@ const h = false;
                         },
                         TsInterfaceProperty {
                             name: "withParams".to_string(),
-                            type_info: TypeInfo::Function(TsFunctionSignature {
+                            type_info: Type::Function(TsFunctionSignature {
                                 params: vec![
                                     FunctionParam {
                                         name: "x".to_string(),
-                                        param_type: TypeInfo::KeywordType(
+                                        param_type: Type::KeywordType(
                                             TsKeywordTypeKind::Number
                                         ),
                                         is_optional: false
                                     },
                                     FunctionParam {
                                         name: "y".to_string(),
-                                        param_type: TypeInfo::KeywordType(
+                                        param_type: Type::KeywordType(
                                             TsKeywordTypeKind::String
                                         ),
                                         is_optional: false
                                     }
                                 ],
-                                return_type: Box::new(TypeInfo::KeywordType(
+                                return_type: Box::new(Type::KeywordType(
                                     TsKeywordTypeKind::Boolean
                                 )),
                                 type_params: vec![],
@@ -348,9 +348,9 @@ const h = false;
                         },
                         TsInterfaceProperty {
                             name: "optional".to_string(),
-                            type_info: TypeInfo::Function(TsFunctionSignature {
+                            type_info: Type::Function(TsFunctionSignature {
                                 params: vec![],
-                                return_type: Box::new(TypeInfo::KeywordType(
+                                return_type: Box::new(Type::KeywordType(
                                     TsKeywordTypeKind::Void
                                 )),
                                 type_params: vec![],
@@ -362,16 +362,16 @@ const h = false;
                         },
                         TsInterfaceProperty {
                             name: "generic".to_string(),
-                            type_info: TypeInfo::Function(TsFunctionSignature {
+                            type_info: Type::Function(TsFunctionSignature {
                                 params: vec![FunctionParam {
                                     name: "value".to_string(),
-                                    param_type: TypeInfo::TypeRef(TsTypeRef {
+                                    param_type: Type::TypeRef(TsTypeRef {
                                         name: "T".to_string(),
                                         type_params: vec![]
                                     }),
                                     is_optional: false
                                 }],
-                                return_type: Box::new(TypeInfo::TypeRef(TsTypeRef {
+                                return_type: Box::new(Type::TypeRef(TsTypeRef {
                                     name: "T".to_string(),
                                     type_params: vec![]
                                 })),
@@ -389,13 +389,13 @@ const h = false;
                         },
                         TsInterfaceProperty {
                             name: "complex".to_string(),
-                            type_info: TypeInfo::Function(TsFunctionSignature {
+                            type_info: Type::Function(TsFunctionSignature {
                                 params: vec![],
-                                return_type: Box::new(TypeInfo::Union(vec![
-                                    TypeInfo::KeywordType(TsKeywordTypeKind::String),
-                                    TypeInfo::TypeRef(TsTypeRef {
+                                return_type: Box::new(Type::Union(vec![
+                                    Type::KeywordType(TsKeywordTypeKind::String),
+                                    Type::TypeRef(TsTypeRef {
                                         name: "Promise".to_string(),
-                                        type_params: vec![TypeInfo::KeywordType(
+                                        type_params: vec![Type::KeywordType(
                                             TsKeywordTypeKind::Number
                                         )]
                                     })
@@ -432,7 +432,7 @@ const h = false;
             analyzer.get_symbol("Box").unwrap(),
             &Symbol::new(
                 "Box".to_string(),
-                TypeInfo::Interface(TsInterface {
+                Type::Interface(TsInterface {
                     name: "Box".to_string(),
                     extends: vec![],
                     type_params: vec![TypeParam {
@@ -442,7 +442,7 @@ const h = false;
                     }],
                     properties: vec![TsInterfaceProperty {
                         name: "value".to_string(),
-                        type_info: TypeInfo::TypeRef(TsTypeRef {
+                        type_info: Type::TypeRef(TsTypeRef {
                             name: "T".to_string(),
                             type_params: vec![]
                         }),
@@ -457,25 +457,25 @@ const h = false;
             analyzer.get_symbol("Pair").unwrap(),
             &Symbol::new(
                 "Pair".to_string(),
-                TypeInfo::Interface(TsInterface {
+                Type::Interface(TsInterface {
                     name: "Pair".to_string(),
                     extends: vec![],
                     type_params: vec![
                         TypeParam {
                             name: "T".to_string(),
                             constraint: None,
-                            default: Some(TypeInfo::KeywordType(TsKeywordTypeKind::String)),
+                            default: Some(Type::KeywordType(TsKeywordTypeKind::String)),
                         },
                         TypeParam {
                             name: "U".to_string(),
-                            constraint: Some(TypeInfo::KeywordType(TsKeywordTypeKind::Number)),
+                            constraint: Some(Type::KeywordType(TsKeywordTypeKind::Number)),
                             default: None,
                         }
                     ],
                     properties: vec![
                         TsInterfaceProperty {
                             name: "first".to_string(),
-                            type_info: TypeInfo::TypeRef(TsTypeRef {
+                            type_info: Type::TypeRef(TsTypeRef {
                                 name: "T".to_string(),
                                 type_params: vec![]
                             }),
@@ -484,7 +484,7 @@ const h = false;
                         },
                         TsInterfaceProperty {
                             name: "second".to_string(),
-                            type_info: TypeInfo::TypeRef(TsTypeRef {
+                            type_info: Type::TypeRef(TsTypeRef {
                                 name: "U".to_string(),
                                 type_params: vec![]
                             }),
@@ -519,7 +519,7 @@ const h = false;
             analyzer.get_symbol("ref").unwrap(),
             &Symbol::new(
                 "ref".to_string(),
-                TypeInfo::TypeRef(TsTypeRef {
+                Type::TypeRef(TsTypeRef {
                     name: "Array".to_string(),
                     type_params: vec![]
                 })
@@ -530,9 +530,9 @@ const h = false;
             analyzer.get_symbol("withTypeArg").unwrap(),
             &Symbol::new(
                 "withTypeArg".to_string(),
-                TypeInfo::TypeRef(TsTypeRef {
+                Type::TypeRef(TsTypeRef {
                     name: "Array".to_string(),
-                    type_params: vec![TypeInfo::KeywordType(TsKeywordTypeKind::Number)]
+                    type_params: vec![Type::KeywordType(TsKeywordTypeKind::Number)]
                 })
             )
         );
@@ -541,11 +541,11 @@ const h = false;
             analyzer.get_symbol("nested").unwrap(),
             &Symbol::new(
                 "nested".to_string(),
-                TypeInfo::TypeRef(TsTypeRef {
+                Type::TypeRef(TsTypeRef {
                     name: "Array".to_string(),
-                    type_params: vec![TypeInfo::TypeRef(TsTypeRef {
+                    type_params: vec![Type::TypeRef(TsTypeRef {
                         name: "Array".to_string(),
-                        type_params: vec![TypeInfo::KeywordType(TsKeywordTypeKind::String)]
+                        type_params: vec![Type::KeywordType(TsKeywordTypeKind::String)]
                     })]
                 })
             )
@@ -555,7 +555,7 @@ const h = false;
             analyzer.get_symbol("person").unwrap(),
             &Symbol::new(
                 "person".to_string(),
-                TypeInfo::TypeRef(TsTypeRef {
+                Type::TypeRef(TsTypeRef {
                     name: "Person".to_string(),
                     type_params: vec![]
                 })
@@ -578,9 +578,9 @@ const h = false;
             analyzer.get_symbol("basic").unwrap(),
             &Symbol::new(
                 "basic".to_string(),
-                TypeInfo::Union(vec![
-                    TypeInfo::KeywordType(TsKeywordTypeKind::String),
-                    TypeInfo::KeywordType(TsKeywordTypeKind::Number)
+                Type::Union(vec![
+                    Type::KeywordType(TsKeywordTypeKind::String),
+                    Type::KeywordType(TsKeywordTypeKind::Number)
                 ])
             )
         );
@@ -589,10 +589,10 @@ const h = false;
             analyzer.get_symbol("withLiteral").unwrap(),
             &Symbol::new(
                 "withLiteral".to_string(),
-                TypeInfo::Union(vec![
-                    TypeInfo::Literal(TsLiteralTypeKind::String("\"foo\"".to_string())),
-                    TypeInfo::Literal(TsLiteralTypeKind::Number(42)),
-                    TypeInfo::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::True))
+                Type::Union(vec![
+                    Type::Literal(TsLiteralTypeKind::String("\"foo\"".to_string())),
+                    Type::Literal(TsLiteralTypeKind::Number(42)),
+                    Type::Literal(TsLiteralTypeKind::Boolean(BoolLiteral::True))
                 ])
             )
         );
@@ -601,14 +601,14 @@ const h = false;
             analyzer.get_symbol("withRef").unwrap(),
             &Symbol::new(
                 "withRef".to_string(),
-                TypeInfo::Union(vec![
-                    TypeInfo::TypeRef(TsTypeRef {
+                Type::Union(vec![
+                    Type::TypeRef(TsTypeRef {
                         name: "Array".to_string(),
-                        type_params: vec![TypeInfo::KeywordType(TsKeywordTypeKind::String)]
+                        type_params: vec![Type::KeywordType(TsKeywordTypeKind::String)]
                     }),
-                    TypeInfo::TypeRef(TsTypeRef {
+                    Type::TypeRef(TsTypeRef {
                         name: "Promise".to_string(),
-                        type_params: vec![TypeInfo::KeywordType(TsKeywordTypeKind::Number)]
+                        type_params: vec![Type::KeywordType(TsKeywordTypeKind::Number)]
                     })
                 ])
             )
@@ -618,14 +618,14 @@ const h = false;
             analyzer.get_symbol("nested").unwrap(),
             &Symbol::new(
                 "nested".to_string(),
-                TypeInfo::Union(vec![
-                    TypeInfo::Union(vec![
-                        TypeInfo::KeywordType(TsKeywordTypeKind::String),
-                        TypeInfo::KeywordType(TsKeywordTypeKind::Number)
+                Type::Union(vec![
+                    Type::Union(vec![
+                        Type::KeywordType(TsKeywordTypeKind::String),
+                        Type::KeywordType(TsKeywordTypeKind::Number)
                     ]),
-                    TypeInfo::Union(vec![
-                        TypeInfo::KeywordType(TsKeywordTypeKind::Boolean),
-                        TypeInfo::KeywordType(TsKeywordTypeKind::Null)
+                    Type::Union(vec![
+                        Type::KeywordType(TsKeywordTypeKind::Boolean),
+                        Type::KeywordType(TsKeywordTypeKind::Null)
                     ])
                 ])
             )
@@ -647,9 +647,9 @@ const h = false;
             analyzer.get_symbol("basic").unwrap(),
             &Symbol::new(
                 "basic".to_string(),
-                TypeInfo::Function(TsFunctionSignature {
+                Type::Function(TsFunctionSignature {
                     params: vec![],
-                    return_type: Box::new(TypeInfo::KeywordType(TsKeywordTypeKind::Void)),
+                    return_type: Box::new(Type::KeywordType(TsKeywordTypeKind::Void)),
                     type_params: vec![],
                     this_param: None,
                     is_async: false,
@@ -661,20 +661,20 @@ const h = false;
             analyzer.get_symbol("withParams").unwrap(),
             &Symbol::new(
                 "withParams".to_string(),
-                TypeInfo::Function(TsFunctionSignature {
+                Type::Function(TsFunctionSignature {
                     params: vec![
                         FunctionParam {
                             name: "x".to_string(),
-                            param_type: TypeInfo::KeywordType(TsKeywordTypeKind::Number),
+                            param_type: Type::KeywordType(TsKeywordTypeKind::Number),
                             is_optional: false
                         },
                         FunctionParam {
                             name: "y".to_string(),
-                            param_type: TypeInfo::KeywordType(TsKeywordTypeKind::String),
+                            param_type: Type::KeywordType(TsKeywordTypeKind::String),
                             is_optional: false
                         }
                     ],
-                    return_type: Box::new(TypeInfo::KeywordType(TsKeywordTypeKind::Boolean)),
+                    return_type: Box::new(Type::KeywordType(TsKeywordTypeKind::Boolean)),
                     type_params: vec![],
                     this_param: None,
                     is_async: false,
@@ -686,13 +686,13 @@ const h = false;
             analyzer.get_symbol("withOptional").unwrap(),
             &Symbol::new(
                 "withOptional".to_string(),
-                TypeInfo::Function(TsFunctionSignature {
+                Type::Function(TsFunctionSignature {
                     params: vec![FunctionParam {
                         name: "x".to_string(),
-                        param_type: TypeInfo::KeywordType(TsKeywordTypeKind::Number),
+                        param_type: Type::KeywordType(TsKeywordTypeKind::Number),
                         is_optional: true
                     }],
-                    return_type: Box::new(TypeInfo::KeywordType(TsKeywordTypeKind::String)),
+                    return_type: Box::new(Type::KeywordType(TsKeywordTypeKind::String)),
                     type_params: vec![],
                     this_param: None,
                     is_async: false,
@@ -704,16 +704,16 @@ const h = false;
             analyzer.get_symbol("generic").unwrap(),
             &Symbol::new(
                 "generic".to_string(),
-                TypeInfo::Function(TsFunctionSignature {
+                Type::Function(TsFunctionSignature {
                     params: vec![FunctionParam {
                         name: "value".to_string(),
-                        param_type: TypeInfo::TypeRef(TsTypeRef {
+                        param_type: Type::TypeRef(TsTypeRef {
                             name: "T".to_string(),
                             type_params: vec![]
                         }),
                         is_optional: false
                     }],
-                    return_type: Box::new(TypeInfo::TypeRef(TsTypeRef {
+                    return_type: Box::new(Type::TypeRef(TsTypeRef {
                         name: "T".to_string(),
                         type_params: vec![]
                     })),
@@ -739,11 +739,11 @@ const h = false;
             analyzer.get_symbol("foo").unwrap(),
             &Symbol::new(
                 "foo".to_string(),
-                TypeInfo::Function(TsFunctionSignature {
+                Type::Function(TsFunctionSignature {
                     params: vec![],
-                    return_type: Box::new(TypeInfo::TypeRef(TsTypeRef {
+                    return_type: Box::new(Type::TypeRef(TsTypeRef {
                         name: "Promise".to_string(),
-                        type_params: vec![TypeInfo::KeywordType(TsKeywordTypeKind::String)]
+                        type_params: vec![Type::KeywordType(TsKeywordTypeKind::String)]
                     })),
                     type_params: vec![],
                     this_param: None,
@@ -769,11 +769,11 @@ const h = false;
             symbol,
             &Symbol::new(
                 "test".to_string(),
-                TypeInfo::Function(TsFunctionSignature {
+                Type::Function(TsFunctionSignature {
                     params: vec![],
-                    return_type: Box::new(TypeInfo::TypeRef(TsTypeRef {
+                    return_type: Box::new(Type::TypeRef(TsTypeRef {
                         name: "Promise".to_string(),
-                        type_params: vec![TypeInfo::KeywordType(TsKeywordTypeKind::Void)]
+                        type_params: vec![Type::KeywordType(TsKeywordTypeKind::Void)]
                     })),
                     type_params: vec![],
                     this_param: None,

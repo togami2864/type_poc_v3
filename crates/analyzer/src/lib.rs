@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use biome_js_parser::parse;
 use biome_js_syntax::*;
 use biome_rowan::SyntaxError;
-use symbol::{GlobalSymbolTable, Symbol, SymbolTable};
+use symbol::{BuiltinTable, Symbol, SymbolTable};
 use type_info::*;
 use visitor::Visitor;
 
@@ -19,7 +19,7 @@ type TResult<T> = Result<T, SyntaxError>;
 pub struct TypeAnalyzer {
     current_path: PathBuf,
     symbol_table: SymbolTable,
-    global_symbol_table: GlobalSymbolTable,
+    builtin_symbol_table: BuiltinTable,
 }
 
 impl TypeAnalyzer {
@@ -27,7 +27,7 @@ impl TypeAnalyzer {
         let mut analyzer = Self {
             current_path: PathBuf::new(),
             symbol_table: SymbolTable::new(),
-            global_symbol_table: GlobalSymbolTable::new(),
+            builtin_symbol_table: BuiltinTable::new(),
         };
 
         analyzer.init_builtin_types(builtin_path);
@@ -44,7 +44,7 @@ impl TypeAnalyzer {
     }
 
     pub fn print_global_symbol_table(&self) {
-        for (name, symbol) in self.global_symbol_table.iter() {
+        for (name, symbol) in self.builtin_symbol_table.iter() {
             println!("  \x1b[32m{}\x1b[0m: {:?}\n", name, symbol);
         }
     }
@@ -62,7 +62,7 @@ impl TypeAnalyzer {
             self.visit(&root);
             for (_, symbol_table) in self.symbol_table.iter() {
                 for (_, symbol) in symbol_table.iter() {
-                    self.global_symbol_table.insert(symbol.clone());
+                    self.builtin_symbol_table.insert(symbol.clone());
                 }
             }
         }
@@ -76,8 +76,8 @@ impl TypeAnalyzer {
         self.symbol_table.get(&self.current_path, name)
     }
 
-    pub fn get_global_symbol(&self, name: &str) -> Option<&Symbol> {
-        self.global_symbol_table.get(name)
+    pub fn get_builtin_symbol(&self, name: &str) -> Option<&Symbol> {
+        self.builtin_symbol_table.get(name)
     }
 }
 

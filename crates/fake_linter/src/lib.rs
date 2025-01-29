@@ -3,7 +3,7 @@ use biome_rowan::AstNode;
 use biome_rowan::SyntaxNodeCast;
 use server::Server;
 use std::path::PathBuf;
-use type_info::TypeInfo;
+use type_info::Type;
 
 pub struct NoFloatingPromisesLinter {
     server: Server,
@@ -165,29 +165,29 @@ impl NoFloatingPromisesLinter {
         }
     }
 
-    fn is_promise_type(&self, type_info: &TypeInfo) -> bool {
+    fn is_promise_type(&self, type_info: &Type) -> bool {
         match type_info {
-            TypeInfo::Interface(interface) if interface.name == BUILTIN_PROMISE => true,
-            TypeInfo::TypeRef(type_ref) if type_ref.name == BUILTIN_PROMISE => true,
-            TypeInfo::Function(func) => self.is_promise_type(&func.return_type),
+            Type::Interface(interface) if interface.name == BUILTIN_PROMISE => true,
+            Type::TypeRef(type_ref) if type_ref.name == BUILTIN_PROMISE => true,
+            Type::Function(func) => self.is_promise_type(&func.return_type),
             _ => false,
         }
     }
 
-    fn infer_expression_type(&self, expr: &AnyJsExpression) -> TypeInfo {
+    fn infer_expression_type(&self, expr: &AnyJsExpression) -> Type {
         match expr {
             AnyJsExpression::JsCallExpression(call_expr) => {
                 if let Ok(callee) = call_expr.callee() {
                     self.infer_expression_type(&callee)
                 } else {
-                    TypeInfo::Unknown
+                    Type::Unknown
                 }
             }
             AnyJsExpression::JsStaticMemberExpression(member_expr) => {
                 if let Ok(object) = member_expr.object() {
                     self.infer_expression_type(&object)
                 } else {
-                    TypeInfo::Unknown
+                    Type::Unknown
                 }
             }
             AnyJsExpression::JsIdentifierExpression(ident_expr) => {
@@ -196,24 +196,24 @@ impl NoFloatingPromisesLinter {
                     if let Some(symbol) = self.server.get_resolved_type_info(symbol_name) {
                         symbol.ty.clone()
                     } else {
-                        TypeInfo::Unknown
+                        Type::Unknown
                     }
                 } else {
-                    TypeInfo::Unknown
+                    Type::Unknown
                 }
             }
             AnyJsExpression::JsAwaitExpression(await_expr) => {
                 if let Ok(argument) = await_expr.argument() {
                     let arg_type = self.infer_expression_type(&argument);
-                    if let TypeInfo::TypeRef(type_ref) = arg_type {
+                    if let Type::TypeRef(type_ref) = arg_type {
                         if type_ref.name == BUILTIN_PROMISE && !type_ref.type_params.is_empty() {
                             return type_ref.type_params[0].clone();
                         }
                     }
                 }
-                TypeInfo::Unknown
+                Type::Unknown
             }
-            _ => TypeInfo::Unknown,
+            _ => Type::Unknown,
         }
     }
 
@@ -226,10 +226,10 @@ impl NoFloatingPromisesLinter {
     }
 }
 
-fn is_call_signature(type_info: &TypeInfo) -> bool {
+fn is_call_signature(type_info: &Type) -> bool {
     match type_info {
-        TypeInfo::Function(_) => true,
-        TypeInfo::Union(types) => types.iter().all(is_call_signature),
+        Type::Function(_) => true,
+        Type::Union(types) => types.iter().all(is_call_signature),
         _ => false,
     }
 }

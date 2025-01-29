@@ -1,10 +1,10 @@
 use biome_js_syntax::{AnyTsVariableAnnotation, JsVariableDeclarator};
-use type_info::TypeInfo;
+use type_info::Type;
 
 use crate::{TResult, TypeAnalyzer};
 
 impl TypeAnalyzer {
-    pub fn analyze_js_variable_declarator(&self, node: &JsVariableDeclarator) -> TResult<TypeInfo> {
+    pub fn analyze_js_variable_declarator(&self, node: &JsVariableDeclarator) -> TResult<Type> {
         let ann = node.variable_annotation();
 
         let ty = if let Some(ann) = ann {
@@ -20,10 +20,10 @@ impl TypeAnalyzer {
             if let Ok(expr) = init.expression() {
                 self.analyze_expression(&expr)
             } else {
-                TypeInfo::Unknown
+                Type::Unknown
             }
         } else {
-            TypeInfo::Unknown
+            Type::Unknown
         };
         Ok(ty)
     }

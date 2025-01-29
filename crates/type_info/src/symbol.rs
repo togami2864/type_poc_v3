@@ -1,16 +1,16 @@
 use std::path::PathBuf;
 
-use crate::TypeInfo;
+use crate::Type;
 use rustc_hash::FxHashMap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Symbol {
     pub name: String,
-    pub ty: TypeInfo,
+    pub ty: Type,
 }
 
 impl Symbol {
-    pub fn new(name: String, ty: TypeInfo) -> Self {
+    pub fn new(name: String, ty: Type) -> Self {
         Self { name, ty }
     }
 }
@@ -40,9 +40,9 @@ impl SymbolTable {
 }
 
 #[derive(Debug, Default)]
-pub struct GlobalSymbolTable(FxHashMap<String, Symbol>);
+pub struct BuiltinTable(FxHashMap<String, Symbol>);
 
-impl GlobalSymbolTable {
+impl BuiltinTable {
     pub fn new() -> Self {
         Self(FxHashMap::default())
     }
