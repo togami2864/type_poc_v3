@@ -114,13 +114,13 @@ impl NoFloatingPromisesLinter {
                         }
 
                         let object_type = self.infer_expression_type(&object);
-                        if self.is_promise_type(&object_type) {
+                        if is_promise_type(&object_type) {
                             return (true, false);
                         }
                     }
                 }
                 let type_info = self.infer_expression_type(expr);
-                (self.is_promise_type(&type_info), false)
+                (is_promise_type(&type_info), false)
             }
             AnyJsExpression::JsAwaitExpression(_) => (false, false),
             AnyJsExpression::JsUnaryExpression(unary_expr) => {
@@ -130,11 +130,11 @@ impl NoFloatingPromisesLinter {
                     }
                 }
                 let type_info = self.infer_expression_type(expr);
-                (self.is_promise_type(&type_info), false)
+                (is_promise_type(&type_info), false)
             }
             _ => {
                 let type_info = self.infer_expression_type(expr);
-                (self.is_promise_type(&type_info), false)
+                (is_promise_type(&type_info), false)
             }
         }
     }
@@ -149,7 +149,7 @@ impl NoFloatingPromisesLinter {
                     if symbol_name == "undefined" {
                         return true;
                     }
-                    if let Some(symbol) = self.server.get_resolved_type_info(symbol_name) {
+                    if let Some(symbol) = self.server.get_type_info(symbol_name) {
                         is_call_signature(&symbol.ty)
                     } else {
                         false
@@ -161,15 +161,6 @@ impl NoFloatingPromisesLinter {
             AnyJsExpression::AnyJsLiteralExpression(
                 AnyJsLiteralExpression::JsNullLiteralExpression(_),
             ) => true,
-            _ => false,
-        }
-    }
-
-    fn is_promise_type(&self, type_info: &Type) -> bool {
-        match type_info {
-            Type::Interface(interface) if interface.name == BUILTIN_PROMISE => true,
-            Type::TypeRef(type_ref) if type_ref.name == BUILTIN_PROMISE => true,
-            Type::Function(func) => self.is_promise_type(&func.return_type),
             _ => false,
         }
     }
@@ -193,7 +184,8 @@ impl NoFloatingPromisesLinter {
             AnyJsExpression::JsIdentifierExpression(ident_expr) => {
                 if let Ok(name) = ident_expr.name() {
                     let symbol_name = name.text().to_string();
-                    if let Some(symbol) = self.server.get_resolved_type_info(symbol_name) {
+                    dbg!(&symbol_name);
+                    if let Some(symbol) = self.server.get_type_info(symbol_name) {
                         symbol.ty.clone()
                     } else {
                         Type::Unknown
@@ -230,6 +222,16 @@ fn is_call_signature(type_info: &Type) -> bool {
     match type_info {
         Type::Function(_) => true,
         Type::Union(types) => types.iter().all(is_call_signature),
+        _ => false,
+    }
+}
+
+fn is_promise_type(type_info: &Type) -> bool {
+    match type_info {
+        Type::Interface(interface) if interface.name == BUILTIN_PROMISE => true,
+        Type::TypeRef(type_ref) if type_ref.name == BUILTIN_PROMISE => true,
+        Type::Function(func) => is_promise_type(&func.return_type),
+        Type::Union(types) => types.iter().any(|ty| is_promise_type(ty)),
         _ => false,
     }
 }

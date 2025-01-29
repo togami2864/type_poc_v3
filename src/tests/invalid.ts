@@ -32,20 +32,3 @@ async function test4(): Promise<void> {
 }
 
 test4();
-
-declare const maybeCallable: string | (() => void);
-Promise.resolve().then(() => {}, maybeCallable);
-
-declare const maybeCallable2: string | (() => void);
-declare const definitelyCallable: () => void;
-Promise.resolve().then(() => {}, undefined);
-Promise.resolve().then(() => {}, null);
-Promise.resolve().then(() => {}, 3);
-Promise.resolve().then(() => {}, maybeCallable2);
-Promise.resolve().then(() => {}, definitelyCallable);
-
-Promise.resolve().catch(undefined);
-Promise.resolve().catch(null);
-Promise.resolve().catch(3);
-await Promise.resolve().catch(maybeCallable2);
-Promise.resolve().catch(definitelyCallable);

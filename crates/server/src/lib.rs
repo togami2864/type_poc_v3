@@ -31,18 +31,26 @@ impl Server {
         }
     }
 
+    pub fn test_analyze(&mut self, src: &str) {
+        let src_type = JsFileSource::ts();
+        let parsed = parse(src, src_type, Default::default());
+        if parsed.has_errors() {
+            panic!("Failed to parse source code: {:?}", parsed.diagnostics());
+        }
+
+        self.analyzer.visit(&parsed.tree());
+    }
+
     pub fn print_symbol_table(&self) {
         self.analyzer.print_symbol_table();
     }
 
-    pub fn get_resolved_type_info(&self, symbol_name: String) -> Option<&Symbol> {
-        if let Some(local) = self.analyzer.get_symbol(&symbol_name) {
-            Some(local)
-        } else if let Some(global) = self.analyzer.get_builtin_symbol(&symbol_name) {
-            Some(global)
-        } else {
-            None
-        }
+    pub fn get_type_info(&self, symbol_name: String) -> Option<&Symbol> {
+        dbg!("current_path:", &self.analyzer.current_path());
+        dbg!("lookup:", &symbol_name);
+        let ty = self.analyzer.get_symbol(&symbol_name);
+        dbg!("resolved:", &ty);
+        ty
     }
 
     pub fn get_type_info_from_builtin(&self, node: &JsSyntaxNode) -> Type {

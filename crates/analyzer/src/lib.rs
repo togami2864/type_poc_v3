@@ -34,6 +34,10 @@ impl TypeAnalyzer {
         analyzer
     }
 
+    pub fn current_path(&self) -> &PathBuf {
+        &self.current_path
+    }
+
     pub fn print_symbol_table(&self) {
         for (path, symbol_table) in self.symbol_table.iter() {
             println!("Path: {:?}", path);
