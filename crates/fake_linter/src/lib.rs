@@ -231,7 +231,7 @@ fn is_promise_type(type_info: &Type) -> bool {
         Type::Interface(interface) if interface.name == BUILTIN_PROMISE => true,
         Type::TypeRef(type_ref) if type_ref.name == BUILTIN_PROMISE => true,
         Type::Function(func) => is_promise_type(&func.return_type),
-        Type::Union(types) => types.iter().any(|ty| is_promise_type(ty)),
+        Type::Union(types) => types.iter().any(is_promise_type),
         _ => false,
     }
 }

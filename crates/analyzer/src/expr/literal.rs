@@ -6,10 +6,7 @@ use type_info::{
 use crate::{TResult, TypeAnalyzer};
 
 impl TypeAnalyzer {
-    pub fn analyze_js_literal_expression(
-        &self,
-        node: &AnyJsLiteralExpression,
-    ) -> TResult<Type> {
+    pub fn analyze_js_literal_expression(&self, node: &AnyJsLiteralExpression) -> TResult<Type> {
         let ty = match node {
             AnyJsLiteralExpression::JsBooleanLiteralExpression(node) => {
                 let value = node.value_token()?;
@@ -50,11 +47,11 @@ impl TypeAnalyzer {
                         type_info: value_ty,
                     });
                 }
-                _ => todo!(),
+                node => todo!("{:?}", node),
             }
         }
-        Ok(Type::Literal(TsLiteralTypeKind::Object(
-            ObjectLiteral { properties },
-        )))
+        Ok(Type::Literal(TsLiteralTypeKind::Object(ObjectLiteral {
+            properties,
+        })))
     }
 }
